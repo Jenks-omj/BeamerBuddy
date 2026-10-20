@@ -8,6 +8,10 @@ A browser-based 3D planner for projection in galleries, theatres and outdoor sit
 - Indoor gallery, theatre (proscenium, stage, apron, raked house, balcony), outdoor sloped site, or an imported SketchUp export (.dae / .obj / .stl / .glb)
 - Brightness heatmaps in nits, foot-lamberts or lux, image-edge coverage view, blend overlap
 - Shadow checks for audience members, performers and instruments
+- X / Y / Z distance overlay, from the selected object or between all projectors, screens and risers
+- Export to SketchUp as COLLADA (.dae): venue, screens, risers, projectors, beams and people as named groups,
+  optionally with the brightness map painted on as textures. With an imported model, the export uses that
+  model's own coordinates so it drops back into the original .skp in place
 - WASD camera movement, lens view and eye-level view
 
 ## Running it

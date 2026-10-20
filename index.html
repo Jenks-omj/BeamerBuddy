@@ -16,6 +16,7 @@
   --accent:#A3560A; --accent-soft:#F2E2CD; --on-accent:#FFFFFF;
   --good:#2B7849; --warn:#8F6400; --bad:#B42318;
   --scene:#D6DCE3; --scene-grid:#AEB7C2; --wall-base:#C3CAD3; --screen-base:#E2E6EB; --person:#6F7A88; --edge:#7E8896; --prop:#9A6B3F; --riser-base:#4A5160;
+  --ax-x:#C2362B; --ax-y:#2B7849; --ax-z:#2F6AC2;
   --f-disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -25,12 +26,14 @@
   --accent:#EE9F45; --accent-soft:#3A2915; --on-accent:#1A1004;
   --good:#5CBD85; --warn:#DDB04A; --bad:#F07167;
   --scene:#090B0E; --scene-grid:#212832; --wall-base:#1B2129; --screen-base:#2A313B; --person:#9AA4B1; --edge:#55606D; --prop:#B88A5C; --riser-base:#262C35;
+  --ax-x:#F07167; --ax-y:#5CBD85; --ax-z:#6FA8F0;
   color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0D1014; --surface:#141820; --raise:#1B2129; --ink:#E3E7ED; --muted:#8B95A3; --line:#28303B;
   --accent:#EE9F45; --accent-soft:#3A2915; --on-accent:#1A1004;
   --good:#5CBD85; --warn:#DDB04A; --bad:#F07167;
   --scene:#090B0E; --scene-grid:#212832; --wall-base:#1B2129; --screen-base:#2A313B; --person:#9AA4B1; --edge:#55606D; --prop:#B88A5C; --riser-base:#262C35;
+  --ax-x:#F07167; --ax-y:#5CBD85; --ax-z:#6FA8F0;
   color-scheme:dark;}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:13px;line-height:1.45}
@@ -60,6 +63,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px;min-height:
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .tag{position:absolute;transform:translate(-50%,-130%);font-family:var(--f-disp);font-weight:600;font-size:12px;letter-spacing:.05em;padding:1px 6px;border-radius:3px;background:var(--surface);border:1px solid var(--line);white-space:nowrap;color:var(--ink)}
 .tag b{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.tag.dtag{transform:translate(-50%,-50%);font-family:var(--f-mono);font-weight:400;font-size:10.5px;letter-spacing:0;padding:1px 5px;opacity:.94}
+.dtag i{font-style:normal;margin-right:6px}.dtag .x{color:var(--ax-x)}.dtag .y{color:var(--ax-y)}.dtag .z{color:var(--ax-z)}.dtag .d{color:var(--muted)}
 .hud{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;max-width:calc(100% - 20px)}
 .chip{font-family:var(--f-mono);font-size:11px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:2px 7px;color:var(--muted);width:max-content;max-width:100%}
 #legend{position:absolute;left:10px;bottom:10px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-width:calc(100% - 20px)}
@@ -70,6 +75,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px;min-height:
 .swatches span{display:inline-flex;align-items:center;gap:5px}
 .swatches i{width:10px;height:10px;border-radius:2px;display:inline-block}
 .viewbtns{position:absolute;right:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.viewbtns .brk{flex-basis:100%;height:0}
 aside{display:flex;flex-direction:column;min-height:0;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
 .tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
 .tab{flex:1 0 auto;border:0;background:transparent;padding:9px 10px;cursor:pointer;font-family:var(--f-disp);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent}
@@ -161,6 +167,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <option value="curve">Curved screen, 2.39:1</option>
       </select>
       <button class="btn" id="fileBtn">Save / load</button>
+      <button class="btn" id="skpBtn">Export to SketchUp</button>
       <button class="btn" id="resetBtn">Reset</button>
     </div>
   </header>
@@ -172,6 +179,8 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
         <button class="btn sm" id="beamBtn" aria-pressed="true">Beams</button>
+        <div class="brk"></div>
+        <div class="seg" id="distSeg" role="group" aria-label="Distances" title="X / Y (height) / Z distances. Selected: from the selected object to everything else. All: between every projector, screen and riser."><button data-v="off">Dist off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
       </div>
       <div id="legend"></div>
     </section>
@@ -428,7 +437,7 @@ function newRiser(over={}){return Object.assign({id:uid('r'),name:'Riser '+((S&&
 function thDefaults(){return {stageW:18,stageD:11,stageH:1.0,flyH:16,apron:1.8,apronW:14,proW:13,proH:7.5,houseW:20,houseL:24,houseH:11,rise:1,run:12,
   seatW:15,seatD:15,seatFront:2.5,rowPitch:.95,seatPitch:.55,bal:true,balH:5.5,balD:7,balRows:5,wallGain:.12,stageGain:.08,cycGain:.8};}
 function baseState(){return {name:'Untitled plan',units:'m',mode:'indoor',room:{L:14,W:10,H:4.5,wallGain:.85,floorGain:.3,ceilGain:.8,walls:true,floor:true,ceil:true},
-  site:{L:70,W:60,rise:1,run:12,dir:0,gain:.18},th:thDefaults(),model:modelDefaults(),ambient:1,derate:85,uniformity:90,target:100,quality:'fine',beams:true,view:'lum',lumUnit:'nits',
+  site:{L:70,W:60,rise:1,run:12,dir:0,gain:.18},th:thDefaults(),model:modelDefaults(),ambient:1,derate:85,uniformity:90,target:100,quality:'fine',beams:true,dist:'off',view:'lum',lumUnit:'nits',
   projectors:[],screens:[],people:[],risers:[],sel:null};}
 
 /* ============================== GEOMETRY HELPERS ============================== */
@@ -484,7 +493,7 @@ Object.values(G).forEach(g=>scene.add(g));
 let surfaces=[],pickables=[];
 function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888';}
 let TC={};
-function readTheme(){['--scene','--scene-grid','--wall-base','--screen-base','--riser-base','--prop','--person','--edge','--accent','--ink'].forEach(k=>TC[k]=new THREE.Color(cssVar(k)));scene.background=TC['--scene'];}
+function readTheme(){['--scene','--scene-grid','--wall-base','--screen-base','--riser-base','--prop','--person','--edge','--accent','--ink','--ax-x','--ax-y','--ax-z'].forEach(k=>TC[k]=new THREE.Color(cssVar(k)));scene.background=TC['--scene'];}
 readTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{readTheme();dirty.objs=dirty.color=dirty.surf=true;});
 new MutationObserver(()=>{readTheme();dirty.objs=dirty.color=dirty.surf=true;}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
@@ -580,7 +589,7 @@ function rebuildModel(){
   const mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];
   names.forEach((n,gi)=>{const a=groups[n];for(let i=0;i<a.length;i+=9){tris.set(a.slice(i,i+9),k*9);tg[k]=gi;k++;}for(let i=0;i<a.length;i+=3){for(let c=0;c<3;c++){mn[c]=Math.min(mn[c],a[i+c]);mx[c]=Math.max(mx[c],a[i+c]);}}});
   for(let i=0;i<tris.length;i+=3){tris[i]-=mn[0];tris[i+1]-=mn[1];tris[i+2]-=mn[2];}
-  MODELGEO={tris,tg,names,size:[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]],count:total};
+  MODELGEO={tris,tg,names,mn,size:[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]],count:total};
   BVH=buildBVH(tris,tg);buildHF();
   MODELMSG='';
 }
@@ -1455,13 +1464,41 @@ const endDrag=()=>{if(!drag)return;const was=drag;drag=null;controls.enabled=cam
 renderer.domElement.addEventListener('pointerup',endDrag);renderer.domElement.addEventListener('pointercancel',endDrag);
 $('#beamBtn').addEventListener('click',()=>{S.beams=!S.beams;$('#beamBtn').setAttribute('aria-pressed',S.beams);dirty.compute=true;save();});
 
+/* ---------- distances: X / Y (height) / Z between object reference points ---------- */
+/* reference points: projector = lens, screen = centre, riser = top centre, person = feet */
+function distPoints(){const out=[];
+  S.projectors.forEach(p=>out.push({id:p.id,t:p.name,pos:lensPos(p)}));
+  S.screens.forEach(s=>out.push({id:s.id,t:s.name,pos:screenWorld(s,.5,.5).p}));
+  (S.risers||[]).forEach(r=>out.push({id:r.id,t:r.name,pos:V(r.x,groundY(r.x,r.z)+r.h,r.z)}));
+  S.people.forEach((h,i)=>out.push({id:h.id,t:personLabel(h,i),pos:V(h.x,personBase(h),h.z),ppl:true}));return out;}
+function distPairs(){const m=S.dist||'off';if(m==='off'||camMode==='pov')return [];const pts=distPoints();
+  if(m==='sel'){const a=S.sel&&pts.find(o=>o.id===S.sel.id);return a?pts.filter(o=>o!==a).map(b=>[a,b]):[];}
+  const q=pts.filter(o=>!o.ppl),out=[];for(let i=0;i<q.length;i++)for(let j=i+1;j<q.length;j++)out.push([q[i],q[j]]);return out;}
+const distLines=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.9}));
+distLines.renderOrder=10;distLines.frustumCulled=false;scene.add(distLines);
+let distLast=[];
+function updateDistances(){const pairs=distPairs();distLast=pairs;const P=[],C=[];
+  const cx=TC['--ax-x'],cy=TC['--ax-y'],cz=TC['--ax-z'],cd=TC['--accent'];
+  const seg=(a,b,c)=>{P.push(a.x,a.y,a.z,b.x,b.y,b.z);C.push(c.r,c.g,c.b,c.r,c.g,c.b);};
+  const legs=S.dist==='sel';
+  pairs.forEach(([A,B])=>{const a=A.pos,b=B.pos;seg(a,b,cd);
+    if(legs){const k1=V(b.x,a.y,a.z),k2=V(b.x,a.y,b.z);seg(a,k1,cx);seg(k1,k2,cz);seg(k2,b,cy);}});
+  distLines.geometry.dispose();const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));distLines.geometry=g;distLines.visible=P.length>0;}
+const sgnLen=m=>(m<-.0005?'−':'+')+Math.abs(toD(m)).toFixed(2);
+function setDist(v){S.dist=v;document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v?'true':'false'));
+  if(v==='sel'&&!S.sel)toast('Select an object to measure from it');save();}
+document.querySelectorAll('#distSeg button').forEach(b=>b.addEventListener('click',()=>setDist(b.dataset.v)));
+
 /* ---------- labels ---------- */
 function updateLabels(){
   const items=[];S.projectors.forEach(p=>items.push({id:p.id,t:p.name,c:p.color,pos:lensPos(p).add(V(0,.45,0))}));
   S.screens.forEach(s=>items.push({id:s.id,t:s.name,c:null,pos:screenWorld(s,.5,1).p.add(V(0,.25,0))}));
+  distLast.forEach(([A,B])=>{const a=A.pos,b=B.pos,dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z;
+    items.push({id:'d:'+A.id+':'+B.id,dist:true,pos:a.clone().lerp(b,.5),
+      h:(S.dist==='all'?`<i class="d">${esc(A.t)}–${esc(B.t)}</i>`:`<i class="d">→ ${esc(B.t)}</i>`)+`<i class="x">X ${sgnLen(dx)}</i><i class="y">Y ${sgnLen(dy)}</i><i class="z">Z ${sgnLen(dz)}</i>${fmtLen(a.distanceTo(b))}`});});
   const r=renderer.domElement.getBoundingClientRect();const seen=new Set();
-  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div','tag');d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);
-    const html=(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;}
+  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',it.dist?'tag dtag':'tag');d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);
+    const html=it.h||(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;}
     const v=it.pos.clone().project(camera);const vis=v.z<1&&v.z>-1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1&&camMode!=='pov';d.hidden=!vis;if(vis){d.style.left=((v.x+1)/2*r.width)+'px';d.style.top=((1-v.y)/2*r.height)+'px';}});
   labelsEl.querySelectorAll('.tag').forEach(d=>{if(!seen.has(d.dataset.id))d.remove();});
 }
@@ -1493,8 +1530,130 @@ function loop(){
   if(dirty.compute){dirty.compute=false;dirty.color=false;compute();if(!drag)updateReadouts();else $('#perf').textContent=`dragging · ${stats.ms.toFixed(0)} ms`;}
   else if(dirty.color){dirty.color=false;paint();}
   updatePOV();if(controls.enabled)controls.update();
-  renderer.render(scene,camera);updateLabels();
+  updateDistances();renderer.render(scene,camera);updateLabels();
 }
+
+/* ============================== SKETCHUP EXPORT (COLLADA .dae, Z up, metres) ============================== */
+/* app space -> the imported model's own frame (so the export lines up in the original .skp), then Y up -> Z up */
+function exportMatrix(){const E=new THREE.Matrix4();
+  if(S.mode==='model'&&MODELGEO){const m=MODELGEO.mn;E.makeScale(1/(+S.model.scale||1),1/(+S.model.scale||1),1/(+S.model.scale||1))
+    .multiply(new THREE.Matrix4().makeRotationY(-(+S.model.rot||0)*D2R)).multiply(new THREE.Matrix4().makeTranslation(m[0],m[1],m[2]));}
+  return new THREE.Matrix4().set(1,0,0,0, 0,0,-1,0, 0,1,0,0, 0,0,0,1).multiply(E);}
+/* planar grid surfaces collapse to one quad; curved screens keep a facet every ~3° */
+function gridQuads(sf){const {nu,nv,P,N3}=sf;const ref=sf.ref;
+  const K=sf.kind==='screen'&&ref&&ref.type==='curved'?clamp(Math.ceil(arcOf(ref)/(3*D2R)),8,nu-1):1;
+  const cols=[];for(let k=0;k<=K;k++)cols.push(Math.round(k/K*(nu-1)));const rows=[0,nv-1];
+  const pt=(i,j)=>{const k=j*nu+i;return [P[k*3],P[k*3+1],P[k*3+2]];};
+  const a0=V(...pt(0,0)),a1=V(...pt(1,0)),a2=V(...pt(0,1));const flip=a1.clone().sub(a0).cross(a2.clone().sub(a0)).dot(V(N3[0],N3[1],N3[2]))<0;
+  const pos=[],uv=[];const push=(i,j)=>{pos.push(...pt(i,j));uv.push(i/(nu-1),j/(nv-1));};
+  for(let c=0;c<cols.length-1;c++){const i0=cols[c],i1=cols[c+1],j0=rows[0],j1=rows[1];
+    const q=flip?[[i0,j0],[i1,j1],[i1,j0],[i0,j0],[i0,j1],[i1,j1]]:[[i0,j0],[i1,j0],[i1,j1],[i0,j0],[i1,j1],[i0,j1]];q.forEach(([i,j])=>push(i,j));}
+  return {pos,uv};}
+/* heatmap as currently shown, one pixel per sample, upscaled so SketchUp filters it smoothly */
+function surfaceTexture(sf){const {nu,nv,col}=sf;const c=document.createElement('canvas');c.width=nu;c.height=nv;const x=c.getContext('2d');const im=x.createImageData(nu,nv);
+  for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){const k=j*nu+i,o=((nv-1-j)*nu+i)*4;im.data[o]=clamp(col[k*3]*255,0,255);im.data[o+1]=clamp(col[k*3+1]*255,0,255);im.data[o+2]=clamp(col[k*3+2]*255,0,255);im.data[o+3]=255;}
+  x.putImageData(im,0,0);const f=Math.max(1,Math.min(8,Math.floor(1024/Math.max(nu,nv))));if(f===1)return c;
+  const b=document.createElement('canvas');b.width=nu*f;b.height=nv*f;const y=b.getContext('2d');y.imageSmoothingEnabled=true;y.imageSmoothingQuality='high';y.drawImage(c,0,0,b.width,b.height);return b;}
+function meshTris(o){const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry;const a=g.attributes.position,v=V(),out=[];
+  for(let i=0;i<a.count;i++){v.fromBufferAttribute(a,i).applyMatrix4(o.matrixWorld);out.push(v.x,v.y,v.z);}if(g!==o.geometry)g.dispose();return out;}
+function collectExport(opt){
+  const nodes=[],mats={},tex=[];
+  const mat=(key,name,c,alpha=1,img=null)=>{if(!mats[key])mats[key]={name,c:c.slice?c:[c.r,c.g,c.b],alpha,img};return key;};
+  const plain={screen:[.93,.93,.93],room:[.78,.78,.78],stage:[.32,.32,.34],riser:[.28,.29,.32],model:[.8,.8,.8]};
+  const surfMat=(sf)=>{if(opt.bake){const id='t'+tex.length;tex.push({id,file:`textures/${id}-${sf.label.replace(/[^\w-]+/g,'_').slice(0,40)}.png`,canvas:surfaceTexture(sf)});return mat(id,'Brightness '+sf.label,[1,1,1],1,tex[tex.length-1].file);}
+    return mat('k-'+sf.kind,{screen:'Screen',room:'Venue surface',stage:'Stage',riser:'Riser'}[sf.kind]||'Surface',plain[sf.kind]||plain.room);};
+  const want=sf=>sf.kind==='screen'?opt.screens:sf.kind==='riser'?opt.risers:opt.venue;
+  const byOwner=new Map();
+  surfaces.filter(sf=>!sf.isModel&&sf.nu>0&&want(sf)).forEach(sf=>{const {pos,uv}=gridQuads(sf);const part={pos,uv:opt.bake?uv:null,mat:surfMat(sf)};
+    const cat=sf.kind==='screen'?'Screens':sf.kind==='riser'?'Risers':'Venue';
+    const own=sf.kind==='riser'&&sf.ref?'rs:'+sf.ref.id:sf.key;let n=byOwner.get(own);
+    if(!n){n={cat,name:sf.kind==='riser'&&sf.ref?sf.ref.name:sf.label,parts:[]};byOwner.set(own,n);nodes.push(n);}n.parts.push(part);});
+  if(opt.model&&MODELGEO){const T=MODELGEO.tris;MODELGEO.names.forEach((nm,gi)=>{const pos=[];for(let i=0;i<MODELGEO.count;i++)if(MODELGEO.tg[i]===gi)for(let c=0;c<9;c++)pos.push(T[i*9+c]);
+    if(pos.length)nodes.push({cat:'Imported model',name:nm,parts:[{pos,mat:mat('k-model','Model surface',plain.model)}]});});}
+  if(opt.proj||opt.ppl){const keep=S.sel;S.sel=null;buildObjects();S.sel=keep;dirty.objs=true;G.objs.updateMatrixWorld(true);
+    G.objs.children.forEach(g=>{if(!g.isGroup)return;let pk=null;g.traverse(o=>{if(!pk&&o.userData.pick)pk=o.userData.pick;});if(!pk)return;
+      if(pk.kind==='proj'&&!opt.proj||pk.kind==='ppl'&&!opt.ppl)return;
+      let name,cat;if(pk.kind==='proj'){const p=S.projectors.find(x=>x.id===pk.id);if(!p)return;name=`${p.name} (${modelOf(p).name})`;cat='Projectors';}
+      else{const i=S.people.findIndex(x=>x.id===pk.id);if(i<0)return;name=personLabel(S.people[i],i);cat='People';}
+      const parts=[];g.traverse(o=>{if(!o.isMesh)return;const c=o.material.color,a=o.material.transparent?o.material.opacity:1;parts.push({pos:meshTris(o),mat:mat('c-'+c.getHexString()+'-'+a,(pk.kind==='proj'?'Projector ':'Figure ')+'#'+c.getHexString(),c,a)});});
+      nodes.push({cat,name,parts});});}
+  if(opt.beams){const ms=rayBegin();PJ.forEach(q=>{if(!q.on)return;
+      const cs=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([sx,sy])=>{const d=q.f.clone().add(q.r.clone().multiplyScalar(q.cx+sx*q.Wc/2)).add(q.u.clone().multiplyScalar(q.cy+sy*q.Hc/2)).normalize();const h=castRay(q.L,d,ms);return h?h.point:q.L.clone().add(d.multiplyScalar(30));});
+      const pos=[];cs.forEach((c,i)=>{const n=cs[(i+1)%4];pos.push(q.L.x,q.L.y,q.L.z,c.x,c.y,c.z,n.x,n.y,n.z);});
+      const col=new THREE.Color(q.p.color);nodes.push({cat:'Beams',name:q.p.name+' beam',parts:[{pos,mat:mat('b-'+col.getHexString(),'Beam '+q.p.name,col,.22)}]});});rayEnd(ms);}
+  return {nodes,mats,tex};}
+const xesc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function writeDAE(X){
+  const F=exportMatrix(),v=V(),f=n=>+n.toFixed(5);const geo=[],vis=[];let gid=0;
+  const mk=Object.keys(X.mats);const mid=k=>'m'+mk.indexOf(k);
+  const cats=[...new Set(X.nodes.map(n=>n.cat))];
+  cats.forEach((cat,ci)=>{const kids=[];
+    X.nodes.filter(n=>n.cat===cat).forEach((n,ni)=>{const inst=[];
+      n.parts.forEach(pt=>{const id='g'+(gid++);const uvOn=!!pt.uv;const map=new Map(),P=[],U=[],idx=[];
+        for(let i=0;i<pt.pos.length/3;i++){v.set(pt.pos[i*3],pt.pos[i*3+1],pt.pos[i*3+2]).applyMatrix4(F);const p=[f(v.x),f(v.y),f(v.z)];const u=uvOn?[f(pt.uv[i*2]),f(pt.uv[i*2+1])]:[];
+          const key=p.concat(u).join(',');let k=map.get(key);if(k===undefined){k=P.length/3;map.set(key,k);P.push(...p);U.push(...u);}idx.push(k);}
+        const tri=[];for(let i=0;i+2<idx.length;i+=3)if(idx[i]!==idx[i+1]&&idx[i+1]!==idx[i+2]&&idx[i]!==idx[i+2])tri.push(idx[i],idx[i+1],idx[i+2]);if(!tri.length)return;
+        geo.push(`<geometry id="${id}" name="${xesc(n.name)}"><mesh>
+<source id="${id}-p"><float_array id="${id}-pa" count="${P.length}">${P.join(' ')}</float_array><technique_common><accessor source="#${id}-pa" count="${P.length/3}" stride="3"><param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/></accessor></technique_common></source>
+${uvOn?`<source id="${id}-t"><float_array id="${id}-ta" count="${U.length}">${U.join(' ')}</float_array><technique_common><accessor source="#${id}-ta" count="${U.length/2}" stride="2"><param name="S" type="float"/><param name="T" type="float"/></accessor></technique_common></source>\n`:''}<vertices id="${id}-v"><input semantic="POSITION" source="#${id}-p"/></vertices>
+<triangles material="mat" count="${tri.length/3}"><input semantic="VERTEX" source="#${id}-v" offset="0"/>${uvOn?`<input semantic="TEXCOORD" source="#${id}-t" offset="0" set="0"/>`:''}<p>${tri.join(' ')}</p></triangles></mesh></geometry>`);
+        inst.push(`<instance_geometry url="#${id}"><bind_material><technique_common><instance_material symbol="mat" target="#${mid(pt.mat)}">${uvOn?'<bind_vertex_input semantic="UVSET0" input_semantic="TEXCOORD" input_set="0"/>':''}</instance_material></technique_common></bind_material></instance_geometry>`);});
+      if(inst.length)kids.push(`<node id="n${ci}_${ni}" name="${xesc(n.name)}" type="NODE">${inst.join('')}</node>`);});
+    if(kids.length)vis.push(`<node id="c${ci}" name="${xesc(cat)}" type="NODE">\n${kids.join('\n')}\n</node>`);});
+  const imgs=[],fx=[],mt=[];
+  mk.forEach((k,i)=>{const m=X.mats[k];const c=m.c.map(x=>f(x)).join(' ');
+    if(m.img)imgs.push(`<image id="i${i}"><init_from>${xesc(m.img)}</init_from></image>`);
+    const diff=m.img?`<texture texture="s${i}-samp" texcoord="UVSET0"/>`:`<color>${c} 1</color>`;
+    const tr=m.alpha<1?`<transparent opaque="A_ONE"><color>1 1 1 ${f(m.alpha)}</color></transparent><transparency><float>1</float></transparency>`:'';
+    fx.push(`<effect id="fx${i}"><profile_COMMON>${m.img?`<newparam sid="s${i}-surf"><surface type="2D"><init_from>i${i}</init_from></surface></newparam><newparam sid="s${i}-samp"><sampler2D><source>s${i}-surf</source></sampler2D></newparam>`:''}<technique sid="common"><lambert><diffuse>${diff}</diffuse>${tr}</lambert></technique></profile_COMMON><extra><technique profile="GOOGLEEARTH"><double_sided>1</double_sided></technique></extra></effect>`);
+    mt.push(`<material id="m${i}" name="${xesc(m.name)}"><instance_effect url="#fx${i}"/></material>`);});
+  return `<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+<asset><contributor><authoring_tool>BeamerBuddy</authoring_tool></contributor><created>${new Date().toISOString()}</created><modified>${new Date().toISOString()}</modified><unit name="meter" meter="1"/><up_axis>Z_UP</up_axis></asset>
+<library_images>${imgs.join('\n')}</library_images>
+<library_effects>${fx.join('\n')}</library_effects>
+<library_materials>${mt.join('\n')}</library_materials>
+<library_geometries>
+${geo.join('\n')}
+</library_geometries>
+<library_visual_scenes><visual_scene id="scene" name="${xesc(S.name)}"><node id="root" name="${xesc(S.name)}" type="NODE">
+${vis.join('\n')}
+</node></visual_scene></library_visual_scenes>
+<scene><instance_visual_scene url="#scene"/></scene>
+</COLLADA>
+`;}
+/* minimal uncompressed .zip so the .dae travels with its texture folder */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function makeZip(files){const enc=new TextEncoder(),parts=[],cd=[];let off=0;const d=new Date();
+  const dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  files.forEach(({name,data})=>{const nm=enc.encode(name),crc=crc32(data),h=new DataView(new ArrayBuffer(30));
+    [[0,0x04034b50,4],[4,20,2],[6,0x0800,2],[8,0,2],[10,tm,2],[12,dt,2],[14,crc,4],[18,data.length,4],[22,data.length,4],[26,nm.length,2],[28,0,2]].forEach(([o,val,n])=>n===4?h.setUint32(o,val,true):h.setUint16(o,val,true));
+    parts.push(new Uint8Array(h.buffer),nm,data);
+    const c=new DataView(new ArrayBuffer(46));[[0,0x02014b50,4],[4,20,2],[6,20,2],[8,0x0800,2],[10,0,2],[12,tm,2],[14,dt,2],[16,crc,4],[20,data.length,4],[24,data.length,4],[28,nm.length,2],[30,0,2],[32,0,2],[34,0,2],[36,0,2],[38,0,4],[42,off,4]].forEach(([o,val,n])=>n===4?c.setUint32(o,val,true):c.setUint16(o,val,true));
+    cd.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+data.length;});
+  const cdLen=cd.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+  [[0,0x06054b50,4],[4,0,2],[6,0,2],[8,files.length,2],[10,files.length,2],[12,cdLen,4],[16,off,4],[20,0,2]].forEach(([o,val,n])=>n===4?e.setUint32(o,val,true):e.setUint16(o,val,true));
+  return new Blob([...parts,...cd,new Uint8Array(e.buffer)],{type:'application/zip'});}
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);}
+async function exportSketchUp(opt){
+  const X=collectExport(opt);if(!X.nodes.length){toast('Nothing to export. Tick at least one item.');return;}
+  const base=(S.name||'plan').replace(/[^\w -]+/g,'').trim().replace(/\s+/g,'-')||'plan';const dae=writeDAE(X);
+  if(!X.tex.length){downloadBlob(new Blob([dae],{type:'model/vnd.collada+xml'}),base+'.dae');toast('Exported '+base+'.dae');return;}
+  const files=[{name:base+'.dae',data:new TextEncoder().encode(dae)}];
+  for(const t of X.tex){const b=await new Promise(r=>t.canvas.toBlob(r,'image/png'));files.push({name:t.file,data:new Uint8Array(await b.arrayBuffer())});}
+  downloadBlob(makeZip(files),base+'-sketchup.zip');toast('Exported '+base+'-sketchup.zip. Unzip it before importing.');}
+$('#skpBtn').addEventListener('click',()=>openModal('Export to SketchUp',b=>{
+  const isM=S.mode==='model';const o={venue:!isM||!!S.model.ground,model:false,screens:true,risers:true,proj:true,beams:true,ppl:true,bake:false};
+  b.append(el('p','note','Downloads a COLLADA (.dae) file of the layout. In SketchUp Pro / Studio on desktop: File → Import…, set the file type to COLLADA (*.dae), then pick the file. Each item comes in as a named group, sorted into Venue, Screens, Risers, Projectors, Beams and People.'));
+  if(isM)b.append(el('p','note','Your plan uses an imported model, so the export uses that model’s own coordinates. Import it into the original SketchUp file with <b>Options → Preserve drawing origin</b> ticked and everything lands in place on top of your existing geometry.'));
+  const g=el('div','grid2');const ck=(k,t,dis)=>{const l=el('label','check');const i=el('input');i.type='checkbox';i.id='f-skp-'+k;i.checked=o[k];i.disabled=!!dis;i.addEventListener('change',()=>{o[k]=i.checked;});l.append(i,document.createTextNode(t));return l;};
+  g.append(ck('venue',isM?'Ground plane':S.mode==='theatre'?'Theatre shell':S.mode==='outdoor'?'Ground / site':'Room (walls, floor, ceiling)',isM&&!S.model.ground),ck('screens','Screens'),ck('risers','Risers'),ck('proj','Projectors'),ck('beams','Projector beams (translucent)'),ck('ppl','People & instruments'));
+  if(isM)g.append(ck('model','Imported model geometry (leave off when importing back into the original file)'));
+  b.append(g);
+  const bk=el('div','sec');bk.append(ck('bake','Paint surfaces with the current “Show” view (heatmap, overlap, edges…) as textures'),el('p','note','With textures on, you get a .zip: unzip it and import the .dae, keeping the textures folder beside it. Imported-model surfaces stay plain; SketchUp can’t show per-vertex colour.'));b.append(bk);
+  const r=el('div','row');r.append(btn('Download',async()=>{try{await exportSketchUp(o);$('#modal').hidden=true;}catch(e){toast('Export failed: '+(e.message||e));}},'btn sm pri'));b.append(r);
+}));
 
 /* ============================== PRESETS ============================== */
 function aimAt(p,pt){const L=lensPos(p);const d=pt.clone().sub(L);p.yaw=+(Math.atan2(-d.x,-d.z)/D2R).toFixed(2);p.pitch=+(Math.atan2(d.y,Math.hypot(d.x,d.z))/D2R).toFixed(2);}
@@ -1593,7 +1752,7 @@ function setView(v){S.view=v;$('#viewMode').value=v;document.querySelectorAll('#
 $('#viewMode').addEventListener('change',e=>setView(e.target.value));
 document.querySelectorAll('#dispSeg button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
 $('#lumUnit').addEventListener('change',e=>{S.lumUnit=e.target.value;dirty.color=true;save();render();});
-function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');}
+function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(S.dist||'off')?'true':'false'));}
 function afterLoad(){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
   syncHeader();dirty.surf=dirty.objs=dirty.compute=true;setCam('orbit');save();render();}
 
