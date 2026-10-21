@@ -65,6 +65,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px;min-height:
 .tag b{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 .tag.dtag{transform:translate(-50%,-50%);font-family:var(--f-mono);font-weight:400;font-size:10.5px;letter-spacing:0;padding:1px 5px;opacity:.94}
 .tag.dtag.dh{transform:translate(12px,-50%)}
+.sugl .row{flex-wrap:nowrap;align-items:center;margin:4px 0;gap:8px}.sugl span{font-size:12px;line-height:1.35}
 .dtag i{font-style:normal;margin-right:6px}.dtag .x{color:var(--ax-x)}.dtag .y{color:var(--ax-y)}.dtag .z{color:var(--ax-z)}.dtag .d{color:var(--muted)}
 .hud{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;max-width:calc(100% - 20px)}
 .chip{font-family:var(--f-mono);font-size:11px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:2px 7px;color:var(--muted);width:max-content;max-width:100%}
@@ -1430,6 +1431,8 @@ function renderProj(){
   const out=el('dl','readout');out.dataset.ro='pread';fit.append(out);
   const w=el('ul','msgs');w.dataset.ro='pwarn';fit.append(w);
   const sug=el('div','sec');sug.dataset.ro='psug';fit.append(sug);
+  sug.addEventListener('click',e=>{const b=e.target.closest('[data-use-model]');if(!b)return;p.model=b.dataset.useModel;p.lens=b.dataset.useLens;
+    p.shiftV=restShift(modelOf(p),lensOf(p));p.shiftH=0;fitProj(p,'fill');toast(`${p.name}: ${modelOf(p).name} with ${lensOf(p).name.split(' (')[0]}, aimed and zoomed to fill.`);});
   const dm=sec('Dimensions');
   dm.append(el('p','note','All measurements are taken from the center of the projector body. Distances run along the floor plan: square to each screen face, and straight to the walls. Left and right of a screen centre are as seen facing the screen. Height is above the floor, not the stage deck.'));
   const dro=el('dl','readout');dro.dataset.ro='pdim';dm.append(dro);
@@ -1442,6 +1445,33 @@ function renderProj(){
   ct.append(el('p','note','Show it with Show → Content preview. The picture fills the projector’s content area without stretching (upside-down hangs are turned upright). Its brightness follows the light that actually lands, with the target luminance as full white. Images are kept in this browser, not in the plan code.'));
   panel.append(e,pos,ct,fit,dm);
 }
+/* ---------- lens and projector suggestions for where the projector stands now ---------- */
+/* fill ratio for a body: content-area fraction of the raster (as in prep) sets how wide the image must be */
+function needFor(m,p,s,dist){const asp=m.rw/m.rh,ca=p.content==='native'?asp:(aspectVal(p.content)||asp);
+  const kw=ca>=asp?1:ca/asp,kh=ca>=asp?1/ca:1/asp;return dist/Math.max(chordOf(s)/kw,chordHOf(s)/kh);}
+const SUG_TOL=.01;
+function reaches(r,need){return need>=r[0]*(1-SUG_TOL)&&need<=r[1]*(1+SUG_TOL);}
+function lensSuggest(p,s){const m=modelOf(p),dist=screenWorld(s,.5,.5).p.distanceTo(lensPos(p)),need=needFor(m,p,s,dist);
+  const lname=(l,r)=>{const n=esc(l.name.split(' (')[0]);return /:1/.test(n)?n:`${n} (${r[0]===r[1]?r[0]:r[0]+'–'+r[1]}:1)`;};
+  const useBtn=(mid,lid,t)=>`<button type="button" class="btn sm" data-use-model="${esc(mid)}" data-use-lens="${esc(lid)}">${t}</button>`;
+  let h=`<p class="note">At ${fmtLen(dist)} from ${esc(s.name)}, filling it needs <b class="mono">${need.toFixed(2)}:1</b>.</p>`;
+  const own=lensesFor(m).filter(l=>!l.custom).map(l=>({l,r:lensRangeFor(l,m,p)}));const fits=own.filter(o=>reaches(o.r,need));
+  if(fits.length)return h+`<p class="note">Lenses for the ${esc(m.name)} that reach it from here:</p><div class="row">${fits.map(o=>useBtn(m.id,o.l.id,`${o.l.id===p.lens?'✓ ':''}${esc(o.l.name.split(' (')[0])}`)).join('')}</div>`;
+  /* nearest lens for this body, and the distance it would need */
+  const k=dist/need;let near=null,nd=Infinity;
+  for(const o of own){const g=need<o.r[0]?o.r[0]/need:need/o.r[1];if(g<nd){nd=g;near=o;}}
+  h+=`<p class="note">No lens for the ${esc(m.name)} reaches that.${near?` Closest: ${lname(near.l,near.r)}, which fills it from <b>${fmtLen(near.r[0]*k)}${near.r[0]===near.r[1]?'':' – '+fmtLen(near.r[1]*k)}</b> away.`:''}</p>`;
+  /* comparable bodies (similar lumens) with a catalog lens that reaches it from this spot */
+  const lm0=+m.lm||1;const alt=[];
+  for(const [lo,hi] of [[.7,1.45],[.5,2]]){alt.length=0;
+    for(const c of MODELS){if(c.custom||c.id===m.id||c.lm<lm0*lo||c.lm>lm0*hi)continue;const nc=needFor(c,p,s,dist);
+      let best=null,bs=Infinity;for(const l of lensesFor(c)){if(l.custom||l.user)continue;const r=lensRangeFor(l,c,p);if(!reaches(r,nc))continue;
+        const sc=Math.abs(nc-(r[0]+r[1])/2)/((r[1]-r[0])/2+.05);if(sc<bs){bs=sc;best={l,r};}}
+      if(best)alt.push({c,...best,d:Math.abs(Math.log(c.lm/lm0))+(c.mfr===m.mfr?0:.05)});}
+    if(alt.length>=3)break;}
+  alt.sort((a,b)=>a.d-b.d);
+  if(!alt.length)return h+`<p class="note">Nothing in the catalog with similar brightness reaches it from here. Move the projector${near?` to about ${fmtLen((near.r[0]+near.r[1])/2*k)} away`:''} or add your own lens in Catalog → My equipment.</p>`;
+  return h+`<p class="note">Projectors of similar brightness (the ${esc(m.name)} is ${lm0.toLocaleString()} lm) that fill it from this spot:</p><div class="sugl">${alt.slice(0,6).map(a=>`<div class="row">${useBtn(a.c.id,a.l.id,'Use')}<span><b>${esc(a.c.mfr)} ${esc(a.c.name)}</b> · ${a.c.lm.toLocaleString()} lm · ${lname(a.l,a.r)}</span></div>`).join('')}</div>`;}
 function targetScreen(p){if(p.target!=='auto'){const s=S.screens.find(s=>s.id===p.target);if(s)return s;}const st=stats.proj[p.id];if(st&&st.tgt&&st.tgt.kind==='screen')return st.tgt.ref;return S.screens[0]||null;}
 function fitProj(p,mode){
   const s=targetScreen(p);if(!s){toast('Add a screen first');return;}
@@ -1698,9 +1728,7 @@ function updateReadouts(){
     if(s){const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const qf=Math.max(chordOf(s)/kw,chordHOf(s)/kh);fitTxt=`<dt>To fill ${esc(s.name)}</dt><dd>${fmtLen(q.a*qf)} – ${fmtLen(q.b*qf)} throw</dd>`;}
     setRO('pread',`<dt>Throw distance</dt><dd>${fmtLen(d)}</dd><dt>Image at throw</dt><dd>${d?fmtLen(q.Wc*d)+' × '+fmtLen(q.Hc*d):'—'}</dd><dt>Image diagonal</dt><dd>${d?fmtLen(Math.hypot(q.Wc,q.Hc)*d):'—'}</dd><dt>Lumens on content</dt><dd>${Math.round(q.lmContent).toLocaleString()} lm</dd><dt>Lands on</dt><dd>${st.tgt?esc(st.tgt.label):'nothing'}</dd><dt>Average on it</dt><dd>${st.tgt?fmtL(st.avg,st.tgt.gain):'—'}</dd><dt>Off-axis angle</dt><dd>${st.keystone!=null?st.keystone.toFixed(1)+'°':'—'}</dd>${fitTxt}`);
     const ws=projWarnings(p).concat(stats.warn.filter(w=>w.t.includes(' '+p.name+' ')));setRO('pwarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));
-    if(s){const L=lensPos(p);const dist=screenWorld(s,.5,.5).p.distanceTo(L);const m=modelOf(p);const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const need=dist/Math.max(chordOf(s)/kw,chordHOf(s)/kh);
-      const fits=lensesFor(m).filter(l=>!l.custom).map(l=>({l,r:lensRangeFor(l,m,p)})).filter(o=>need>=o.r[0]-1e-3&&need<=o.r[1]+1e-3);
-      setRO('psug',`<p class="note">At ${fmtLen(dist)} from ${esc(s.name)}, filling it needs <b class="mono">${need.toFixed(2)}:1</b>. ${fits.length?'Lenses that reach it: '+fits.map(o=>esc(o.l.name.split(' (')[0])).join(', ')+'.':'No lens in this family reaches that ratio. Move the projector or pick another model.'}</p>`);}
+    if(s)setRO('psug',lensSuggest(p,s));else setRO('psug','');
   }
   const x=S.sel&&S.sel.kind==='scr'&&S.screens.find(a=>a.id===S.sel.id);
   if(x&&stats.scr[x.id]){const st=stats.scr[x.id];const u=st.mx>0?st.mn/st.mx:0;
