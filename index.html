@@ -151,6 +151,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
           <option value="overlap">Overlap / blend zones</option>
           <option value="source">Which projector</option>
           <option value="edges">Image edges (coverage)</option>
+          <option value="content">Content preview (images)</option>
         </select></label>
       <select id="lumUnit" aria-label="Brightness unit">
         <option value="nits">nits (cd/m²)</option>
@@ -177,7 +178,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
       <div id="labels"></div>
       <div class="hud"><div class="chip" id="hint">Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster</div><div class="chip" id="perf"></div><div class="chip" id="dimnote" hidden>Floor-plan dimensions and height above the floor. All projector measurements are taken from the center of the projector body.</div></div>
       <div class="viewbtns">
-        <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button></div>
+        <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button><button data-v="content">Content</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
         <button class="btn sm" id="beamBtn" aria-pressed="true">Beams</button>
         <div class="brk"></div>
@@ -283,7 +284,34 @@ const FAM={
   {id:'f-170',name:'FLD+/FLDX 1.7–2.5:1 (EN41/61)',min:1.7,max:2.5},
   {id:'f-250',name:'FLD+ 2.50–4.60:1 (EN44)',min:2.5,max:4.6},
   {id:'f-380',name:'FLD 3.8–6.5:1 (EN16)',min:3.8,max:6.5},
-  {id:'f-650',name:'FLDX 6.5–9.0:1 (EN69)',min:6.5,max:9.0}]}
+  {id:'f-650',name:'FLDX 6.5–9.0:1 (EN69)',min:6.5,max:9.0}]},
+ BQLS2:{name:"BenQ LS2 lenses (LU9235 / LU9245 / LU9255)",src:"BenQ LU9235 / LU9245 spec pages and LU9255 datasheet; lens codes cross-checked with ProjectorCentral",verified:true,lenses:[
+  {id:"ls2st3",name:"LS2ST3 Wide Fix (fixed)",min:0.77,max:0.77},
+  {id:"ls2st2",name:"LS2ST2 Short Throw zoom (5A.JK337.001)",min:0.77,max:1.1,sv:[-15,55],sh:5},
+  {id:"ls2st1",name:"LS2ST1 Wide Zoom (5J.JDH37.011)",min:1.1,max:1.3,sv:[-15,55],sh:5},
+  {id:"ls2st4",name:"LS2ST4 Semi Throw zoom (5A.JK337.011)",min:1.25,max:1.6,sv:[-15,55],sh:5},
+  {id:"ls2sd2",name:"LS2SD2 Standard zoom (5J.JEN37.001)",min:1.54,max:1.93,sv:[-15,55],sh:5},
+  {id:"ls2lt1",name:"LS2LT1 Semi Long zoom (5J.JDH37.032)",min:1.93,max:2.9,sv:[-15,55],sh:5},
+  {id:"ls2lt2",name:"LS2LT2 Long Zoom (5J.JDH37.041)",min:3,max:5,sv:[-15,55],sh:5}]},
+ BQLS1:{name:"BenQ LS1 lenses (LU9715 / LU9915)",src:"BenQ LU9715 / LU9915 spec pages; ProjectorCentral lens pages",verified:true,lenses:[
+  {id:"ls1st4",name:"LS1ST4 Ultra Short Throw fixed (5J.JCY37.001)",min:0.38,max:0.38,base:56.5,note:"UST lens; image centre sits 56.5% of image height above the lens axis",sv:[-3,7],sh:5},
+  {id:"ls1st3",name:"LS1ST3 Wide Fixed (5J.JAM37.011)",min:0.76,max:0.76,sv:[0,0],sh:0},
+  {id:"ls1st2",name:"LS1ST2 Ultra Wide Zoom (5J.JAM37.061)",min:0.75,max:0.93,sv:[0,50],sh:6.7},
+  {id:"ls1st1",name:"LS1ST1 Wide Zoom (5J.JAM37.021)",min:1.25,max:1.79,sv:[0,50],sh:10},
+  {id:"ls1sd",name:"LS1SD Standard Zoom (5J.JAM37.001)",min:1.73,max:2.27,sv:[0,50],sh:10},
+  {id:"ls1lt1",name:"LS1LT1 Semi Long Zoom (5J.JAM37.051)",min:2.22,max:3.67,sv:[0,50],sh:10},
+  {id:"ls1lt2",name:"LS1LT2 Long Zoom 1 (5J.JAM37.031)",min:3.58,max:5.38,sv:[0,50],sh:10},
+  {id:"ls1lt3",name:"LS1LT3 Long Zoom 2 (5J.JAM37.041)",min:5.31,max:8.26,sv:[0,50],sh:10}]},
+ BQLS1A:{name:"BenQ LS1 \u201cA\u201d lenses (LU9750 / LU9800)",src:"BenQ LU9750 / LU9800 spec pages",verified:true,lenses:[
+  {id:"ls1st4",name:"LS1ST4 Ultra Short Throw fixed (5J.JCY37.001)",min:0.38,max:0.38,base:56.5,note:"UST lens; image centre sits 56.5% of image height above the lens axis",sv:[-3,7],sh:5},
+  {id:"ls1st3a",name:"LS1ST3A Short Throw zoom (5J.JPN37.001)",min:0.77,max:1.1,sv:[-15,55],sh:5},
+  {id:"ls1st2a",name:"LS1ST2A Wide Zoom 2 (5J.JPN37.002)",min:1.1,max:1.3,sv:[-15,55],sh:5},
+  {id:"ls1st1a",name:"LS1ST1A Wide Zoom 1 (5J.JPN37.003)",min:1.25,max:1.6,sv:[-15,55],sh:5},
+  {id:"ls1sda",name:"LS1SDA Standard zoom (5J.JPN37.004)",min:1.54,max:1.93,sv:[-15,55],sh:5},
+  {id:"ls1lt0",name:"LS1LT0 Semi Long zoom (5J.JPN37.005)",min:1.93,max:2.9,sv:[-15,55],sh:5},
+  {id:"ls1lt1",name:"LS1LT1 Semi Long Zoom (5J.JAM37.051)",min:2.22,max:3.67,sv:[0,50],sh:10},
+  {id:"ls1lt2",name:"LS1LT2 Long Zoom 1 (5J.JAM37.031)",min:3.58,max:5.38,sv:[0,50],sh:10},
+  {id:"ls1lt3",name:"LS1LT3 Long Zoom 2 (5J.JAM37.041)",min:5.31,max:8.26,sv:[0,50],sh:10}]}
 };
 /* [maker, series, model, lumens, native w, native h, technology, lens family, extra] */
 const RAW=[
@@ -374,8 +402,178 @@ const RAW=[
  ['Barco','F Series','F70-4K6',5500,3840,2160,'1DLP laser phosphor','BF'],
  ['Barco','F Series','F70-W8',7500,1920,1200,'1DLP laser phosphor','BF'],
  ['Barco','F Series','F70-W6',5500,1920,1200,'1DLP laser phosphor','BF'],
+ /* BenQ: built-in lenses (fx), projection offset (off, %), adjustable shift around it (sv V range %, sh ±H %); unc = partial or dealer listing */
+ ['BenQ',"Business & education","EH600",3500,1920,1080,"1DLP lamp",null,{fx:[1.49,1.64],off:108,src:"https://www.benq.com/en-us/business/projector/eh600/specifications.html"}],
+ ['BenQ',"Business & education","EH620",3400,1920,1080,"1DLP lamp",null,{fx:[1.13,1.47],off:105,src:"https://www.benq.com/en-us/business/projector/eh620/specifications.html"}],
+ ['BenQ',"Business & education","EW600",3600,1280,800,"1DLP lamp",null,{fx:[1.55,1.7],off:100,src:"https://www.benq.com/en-ap/business/projector/ew600/specifications.html"}],
+ ['BenQ',"Business & education","MH550",3500,1920,1080,"1DLP lamp",null,{fx:[1.49,1.64],off:100,src:"https://www.benq.com/en-ap/business/projector/mh550/specifications.html"}],
+ ['BenQ',"Business & education","MH560",3800,1920,1080,"1DLP lamp",null,{fx:[1.49,1.64],off:108,src:"https://www.benq.com/en-ap/business/projector/mh560/specifications.html"}],
+ ['BenQ',"Business & education","MH733",4000,1920,1080,"1DLP lamp",null,{fx:[1.15,1.5],off:115,src:"https://www.benq.com/en-us/business/projector/mh733/specifications.html"}],
+ ['BenQ',"Business & education","MH760",5000,1920,1080,"1DLP lamp",null,{fx:[1.15,1.5],off:109,sv:[0,6],src:"https://www.benq.com/en-us/business/projector/mh760/specifications.html"}],
+ ['BenQ',"Business & education","MS536",4000,800,600,"1DLP lamp",null,{fx:[1.965,2.356],off:106,src:"https://www.benq.com/en-us/business/projector/ms536/specifications.html"}],
+ ['BenQ',"Business & education","MS550",3600,800,600,"1DLP lamp",null,{fx:[1.96,2.15],off:110,src:"https://www.benq.com/en-ap/business/projector/ms550/specifications.html"}],
+ ['BenQ',"Business & education","MS560",4000,800,600,"1DLP lamp",null,{fx:[1.96,2.15],off:110,src:"https://www.benq.com/en-us/business/projector/ms560/specifications.html"}],
+ ['BenQ',"Business & education","MU613",4000,1920,1200,"1DLP lamp",null,{fx:[1.5,1.65],src:"https://www.projectorcentral.com/BenQ-MU613.htm"}],
+ ['BenQ',"Business & education","MU641",4000,1920,1200,"1DLP lamp",null,{fx:[1.47,1.76],src:"https://www.projectorcentral.com/BenQ-MU641.htm"}],
+ ['BenQ',"Business & education","MW536",4000,1280,800,"1DLP lamp",null,{fx:[1.55,1.86],off:106,src:"https://www.benq.com/en-us/business/projector/mw536/specifications.html"}],
+ ['BenQ',"Business & education","MW550",3600,1280,800,"1DLP lamp",null,{fx:[1.55,1.7],off:100,src:"https://www.benq.com/en-ap/business/projector/mw550/specifications.html"}],
+ ['BenQ',"Business & education","MW560",4000,1280,800,"1DLP lamp",null,{fx:[1.55,1.7],off:100,src:"https://www.benq.com/en-us/business/projector/mw560/specifications.html"}],
+ ['BenQ',"Business & education","MW732",4000,1280,800,"1DLP lamp",null,{fx:[1.21,1.57],off:110,src:"https://www.benq.com/en-us/business/projector/mw732/specifications.html"}],
+ ['BenQ',"Business & education","MX536",4000,1024,768,"1DLP lamp",null,{fx:[1.942,2.332],off:106,src:"https://www.benq.com/en-us/business/projector/mx536/specifications.html"}],
+ ['BenQ',"Business & education","MX550",3600,1024,768,"1DLP lamp",null,{fx:[1.96,2.15],off:110,src:"https://www.benq.com/en-ap/business/projector/mx550/specifications.html"}],
+ ['BenQ',"Business & education","MX560",4000,1024,768,"1DLP lamp",null,{fx:[1.96,2.15],off:110,src:"https://www.benq.com/en-ap/business/projector/mx560/specifications.html"}],
+ ['BenQ',"Business & education","MX731",4000,1024,768,"1DLP lamp",null,{fx:[1.51,1.97],off:107.5,src:"https://www.benq.com/en-us/business/projector/mx731/specifications.html"}],
+ ['BenQ',"Business & education","SH753+",5000,1920,1080,"1DLP lamp",null,{fx:[1.39,2.09],off:114.9,src:"https://www.benq.eu/content/dam/newb2b/de/products/projektor/s-serie/BenQ_SH753+_Datenblatt.pdf"}],
+ ['BenQ',"Business & education","SH753P",5000,1920,1080,"1DLP lamp",null,{fx:[1.39,2.09],off:115,src:"https://www.benq.eu/en-eu/business/projector/sh753p/specifications.html"}],
+ ['BenQ',"Business & education","SU765",5500,1920,1200,"1DLP lamp",null,{fx:[1.39,2.09],off:114,sv:[0,13],src:"https://www.benq.com/en-us/business/projector/su765/specifications.html"}],
+ ['BenQ',"Home & gaming","TK700",3200,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.127,1.46],off:110,src:"https://www.benq.com/en-us/projector/gaming/tk700/spec.html"}],
+ ['BenQ',"Home & gaming","TK705i",3000,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1,1.3],off:100,src:"https://www.benq.com/en-us/projector/cinema/tk705i/spec.html"}],
+ ['BenQ',"Home & gaming","TK710",3200,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[1.15,1.5],off:105,sv:[0,10],src:"https://www.benq.com/en-us/projector/gaming/tk710/spec.html"}],
+ ['BenQ',"Home & gaming","X1300i",3000,1920,1080,"1DLP 4LED",null,{fx:[1.3,1.56],off:91,src:"https://www.benq.com/en-us/projector/gaming/x1300i/spec.html"}],
+ ['BenQ',"Home & gaming","X3000i",3000,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1.15,1.5],off:110,src:"https://www.benq.com/en-us/projector/gaming/x3000i/spec.html"}],
+ ['BenQ',"Home & gaming","X3100i",3300,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1.15,1.5],off:110,sv:[-10,10],unc:1,src:"https://www.benq.com/en-us/projector/gaming/x3100i/spec.html"}],
+ ['BenQ',"Home cinema","GP520",2600,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.com/en-us/projector/cinema/gp520/spec.html"}],
+ ['BenQ',"Home cinema","HT2050A",2200,1920,1080,"1DLP lamp",null,{fx:[1.15,1.5],off:105,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/ht2050a/spec.html"}],
+ ['BenQ',"Home cinema","HT2060 / W1140",2300,1920,1080,"1DLP 4LED",null,{fx:[1.15,1.5],off:105,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/ht2060/spec.html"}],
+ ['BenQ',"Home cinema","HT3550 / W2700",2000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/ht3550/spec.html"}],
+ ['BenQ',"Home cinema","HT3550i / W2700i",2000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/ht3550i/spec.html"}],
+ ['BenQ',"Home cinema","HT3560 / W2710i",2200,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/ht3560/spec.html"}],
+ ['BenQ',"Home cinema","HT4550i / W4000i",3200,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1.15,1.5],off:0,sv:[0,60],sh:15,src:"https://www.benq.com/en-us/projector/cinema/ht4550i/spec.html"}],
+ ['BenQ',"Home cinema","HT5550 / W5700",1800,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/projector/cinema/ht5550/spec.html"}],
+ ['BenQ',"Home cinema","TH575",3800,1920,1080,"1DLP lamp",null,{fx:[1.49,1.64],off:108,src:"https://www.benq.com/en-us/projector/cinema/th575/spec.html"}],
+ ['BenQ',"Home cinema","TH585",3500,1920,1080,"1DLP lamp",null,{fx:[1.5,1.65],off:100,src:"https://www.benq.com/en-us/projector/cinema/th585/spec.html"}],
+ ['BenQ',"Home cinema","TH585P",3500,1920,1080,"1DLP lamp",null,{fx:[1.5,1.65],off:100,src:"https://www.benq.com/en-us/projector/cinema/th585p/spec.html"}],
+ ['BenQ',"Home cinema","TH685",3500,1920,1080,"1DLP lamp",null,{fx:[1.127,1.46],off:105,src:"https://www.benq.com/en-us/projector/cinema/th685/spec.html"}],
+ ['BenQ',"Home cinema","TH685i",3500,1920,1080,"1DLP lamp",null,{fx:[1.127,1.46],off:105,src:"https://www.benq.com/en-us/projector/cinema/th685i/spec.html"}],
+ ['BenQ',"Home cinema","TK800M",3000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.5,1.65],off:110,src:"https://www.benq.com/en-us/projector/cinema/tk800m/spec.html"}],
+ ['BenQ',"Home cinema","TK810",3200,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.48,1.62],off:105,src:"https://www.benq.com/en-us/projector/cinema/tk810/spec.html"}],
+ ['BenQ',"Home cinema","TK850",3000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/tk850/spec.html"}],
+ ['BenQ',"Home cinema","TK850i",3000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/tk850i/spec.html"}],
+ ['BenQ',"Home cinema","TK860",3300,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-uk/projector/cinema/tk860/spec.html"}],
+ ['BenQ',"Home cinema","TK860i",3300,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.13,1.47],off:100,sv:[0,10],src:"https://www.benq.com/en-us/projector/cinema/tk860i/spec.html"}],
+ ['BenQ',"Home cinema","W1700 / HT2550",2200,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.47,1.76],src:"https://www.projectorcentral.com/BenQ-W1700.htm"}],
+ ['BenQ',"Home cinema","W1800",2000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[1.127,1.46],off:110,src:"https://www.benq.com/en-uk/projector/cinema/w1800/spec.html"}],
+ ['BenQ',"Home cinema","W2720i",2500,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1,1.3],off:100,sv:[-5,5],src:"https://www.benq.com/en-us/projector/cinema/w2720i/spec.html"}],
+ ['BenQ',"Home cinema","W4100i",3200,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[1.15,1.5],off:0,sv:[0,60],sh:15,src:"https://www.benq.com/en-us/projector/cinema/w4100i/spec.html"}],
+ ['BenQ',"Home cinema","W5800",2600,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[1.52,2.45],off:0,sv:[-50,50],sh:21,src:"https://www.benq.com/en-us/projector/cinema/w5800/spec.html"}],
+ ['BenQ',"Home cinema","W5850",2600,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[1,1.6],off:0,sv:[-50,50],sh:15,src:"https://www.benq.com/en-us/projector/cinema/w5850/spec.html"}],
+ ['BenQ',"Installation & business","LH500",2000,1920,1080,"1DLP LED",null,{fx:[1.49,1.64],off:100,src:"https://www.benq.com/en-us/business/projector/lh500/specifications.html"}],
+ ['BenQ',"Installation & business","LH650",4000,1920,1080,"1DLP laser",null,{fx:[1.15,1.5],off:105.5,src:"https://www.benq.com/en-us/business/projector/lh650/specifications.html"}],
+ ['BenQ',"Installation & business","LH720",4000,1920,1080,"1DLP laser",null,{fx:[1.38,2.13],off:116,sv:[0,14],src:"https://www.benq.com/en-us/business/projector/lh720/specifications.html"}],
+ ['BenQ',"Installation & business","LH730",4000,1920,1080,"1DLP 4LED",null,{fx:[1.3,1.56],off:91.7,src:"https://www.benq.com/en-us/business/projector/lh730/specifications.html"}],
+ ['BenQ',"Installation & business","LH750",5000,1920,1080,"1DLP 4LED",null,{fx:[1.16,1.88],off:100,src:"https://www.benq.com/en-us/business/projector/lh750/specifications.html"}],
+ ['BenQ',"Installation & business","LH930",5000,1920,1080,"1DLP laser",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lh930/specifications.html"}],
+ ['BenQ',"Installation & business","LK935",5500,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lk935/specifications.html"}],
+ ['BenQ',"Installation & business","LK952",5000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lk952/specifications.html"}],
+ ['BenQ',"Installation & business","LU710",4000,1920,1200,"1DLP laser",null,{fx:[1.13,1.46],off:100,src:"https://www.benq.com/en-us/business/projector/lu710/specifications.html"}],
+ ['BenQ',"Installation & business","LU785",6000,1920,1200,"1DLP laser",null,{fx:[1.15,1.9],off:115,sv:[-2,10],sh:2.5,src:"https://www.benq.com/en-us/business/projector/lu785/specifications.html"}],
+ ['BenQ',"Installation & business","LU930",5000,1920,1200,"1DLP laser",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lu930/specifications.html"}],
+ ['BenQ',"Installation & business","LU935",6000,1920,1200,"1DLP laser",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lu935/specifications.html"}],
+ ['BenQ',"Installation & business","LU950",5000,1920,1200,"1DLP laser",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lu950/specifications.html"}],
+ ['BenQ',"Installation & business","LU951",5200,1920,1200,"1DLP laser",null,{fx:[1.36,2.18],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-ap/business/projector/lu951/specifications.html"}],
+ ['BenQ',"Installation & business","LW500",2000,1280,800,"1DLP LED",null,{fx:[1.55,1.7],off:100,src:"https://www.benq.com/en-us/business/projector/lw500/specifications.html"}],
+ ['BenQ',"Installation & business","LW550",3000,1280,800,"1DLP LED",null,{fx:[1.55,1.7],off:100,src:"https://www.benq.com/en-us/business/projector/lw550/specifications.html"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9235",6000,1920,1200,"1DLP laser","BQLS2",{off:0,sv:[-15,55],sh:5,src:"https://www.benq.com/en-us/business/projector/lu9235/specifications.html"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9245",7000,1920,1200,"1DLP laser","BQLS2",{off:0,sv:[-15,55],sh:5,src:"https://www.benq.com/en-us/business/projector/lu9245/specifications.html"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9255",8500,1920,1200,"1DLP laser","BQLS2",{sv:[-15,55],sh:5,src:"https://www.benq.eu/content/dam/newb2b/de/products/projektor/BenQ_LU9255_Datenblatt.pdf"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9715",8000,1920,1200,"1DLP laser","BQLS1",{off:0,sv:[0,50],sh:10,src:"https://www.benq.com/en-us/business/projector/lu9715/specifications.html"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9750",8500,1920,1200,"1DLP laser","BQLS1A",{off:0,sv:[-15,55],sh:5,src:"https://www.benq.com/en-us/business/projector/lu9750/specifications.html"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9800",10000,1920,1200,"1DLP laser","BQLS1A",{off:0,sv:[-15,55],sh:5,src:"https://www.benq.com/en-us/business/projector/lu9800/specifications.html"}],
+ ['BenQ',"Installation (interchangeable lens)","LU9915",10000,1920,1200,"1DLP laser","BQLS1",{off:0,sv:[0,50],sh:10,src:"https://www.benq.com/en-us/business/projector/lu9915/specifications.html"}],
+ ['BenQ',"Portable","GP100A",1000,1920,1080,"1DLP LED",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.com/en-us/projector/portable/gp100a/spec.html"}],
+ ['BenQ',"Portable","GS2",500,1280,720,"1DLP LED",null,{fx:[1.3,1.3],off:100,src:"https://www.benq.eu/en-uk/projector/portable/gs2/spec.html"}],
+ ['BenQ',"Portable","GS50",500,1920,1080,"1DLP LED",null,{fx:[1.21,1.21],off:100,src:"https://www.benq.com/en-us/projector/portable/gs50/spec.html"}],
+ ['BenQ',"Portable","GV1",200,854,480,"1DLP LED",null,{fx:[1.3,1.3],off:100,src:"https://www.benq.com/en-us/projector/portable/gv1/spec.html"}],
+ ['BenQ',"Portable","GV10",100,854,480,"1DLP LED",null,{fx:[1.3,1.3],off:100,src:"https://www.benq.com/en-us/projector/portable/gv10/spec.html"}],
+ ['BenQ',"Portable","GV11",200,854,480,"1DLP LED",null,{fx:[1.3,1.3],off:100,src:"https://www.benq.com/en-us/projector/portable/gv11/spec.html"}],
+ ['BenQ',"Portable","GV30",300,1280,720,"1DLP LED",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.com/en-us/projector/portable/gv30/spec.html"}],
+ ['BenQ',"Portable","GV31",300,1920,1080,"1DLP LED",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.com/en-us/projector/portable/gv31/spec.html"}],
+ ['BenQ',"Portable","GV32",500,1920,1080,"1DLP LED",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.com/en-us/projector/portable/gv32/spec.html"}],
+ ['BenQ',"Portable","GV50",500,1920,1080,"1DLP laser",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.com/en-us/projector/portable/gv50/spec.html"}],
+ ['BenQ',"Portable","GV50P",500,1920,1080,"1DLP laser",null,{fx:[1.2,1.2],off:100,src:"https://www.benq.eu/en-uk/projector/portable/gv50p/spec.html"}],
+ ['BenQ',"Portable","X300G",2000,3840,2160,"1DLP LED \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/gaming/x300g/spec.html"}],
+ ['BenQ',"Short throw business & education","EU610ST",3800,1920,1200,"1DLP lamp",null,{fx:[0.9,1.08],off:100,src:"https://www.benq.eu/en-uk/projector/business/eu610st/spec.html"}],
+ ['BenQ',"Short throw business & education","EW710ST",3600,1280,800,"1DLP lamp",null,{fx:[0.49,0.49],off:105,src:"https://www.benq.com/en-ap/business/projector/ew710st/specifications.html"}],
+ ['BenQ',"Short throw business & education","EW800ST",3300,1280,800,"1DLP lamp",null,{fx:[0.49,0.49],off:105,src:"https://www.benq.com/en-us/business/projector/ew800st/specifications.html"}],
+ ['BenQ',"Short throw business & education","EW805ST",3600,1280,800,"1DLP lamp",null,{fx:[0.49,0.49],off:105,src:"https://www.benq.com/en-ap/business/projector/ew805st/specifications.html"}],
+ ['BenQ',"Short throw business & education","EX800ST",3300,1024,768,"1DLP lamp",null,{fx:[0.61,0.61],off:115,src:"https://www.benq.com/en-ap/business/projector/ex800st/specifications.html"}],
+ ['BenQ',"Short throw business & education","LH820ST",3600,1920,1080,"1DLP laser",null,{fx:[0.497,0.497],off:109,src:"https://www.benq.com/en-us/business/golf-simulator-projector/lh820st/specifications.html"}],
+ ['BenQ',"Short throw business & education","LH820ST+",4000,1920,1080,"1DLP laser",null,{fx:[0.497,0.497],off:109,src:"https://www.benq.eu/nl-nl/business/projector/lh820stplus/specifications.html"}],
+ ['BenQ',"Short throw business & education","LH850ST",4000,1920,1080,"1DLP laser",null,{fx:[0.499,0.499],off:112,src:"https://www.benq.com/en-us/business/projector/lh850st/specifications.html"}],
+ ['BenQ',"Short throw business & education","LW820ST",3600,1280,800,"1DLP laser",null,{fx:[0.52,0.52],off:106,src:"https://www.benq.com/en-ap/business/projector/lw820st/specifications.html"}],
+ ['BenQ',"Short throw business & education","LX820ST",3600,1024,768,"1DLP laser",null,{fx:[0.67,0.67],src:"https://www.projectorcentral.com/BenQ-LX820ST.htm"}],
+ ['BenQ',"Short throw business & education","MW632ST",3200,1280,800,"1DLP lamp",null,{fx:[0.72,0.87],off:105,src:"https://www.benq.com/en-us/business/projector/mw632st/specifications.html"}],
+ ['BenQ',"Short throw business & education","MW809STH",3600,1280,800,"1DLP lamp",null,{fx:[0.49,0.49],off:105,src:"https://www.benq.com/en-us/business/projector/mw809sth/specifications.html"}],
+ ['BenQ',"Short throw business & education","MW826ST",3400,1280,800,"1DLP lamp",null,{fx:[0.49,0.49],src:"https://www.projectorcentral.com/BenQ-MW826ST.htm"}],
+ ['BenQ',"Short throw business & education","MW826STH",3500,1280,800,"1DLP lamp",null,{fx:[0.49,0.49],off:105,src:"https://www.benq.com/en-us/business/projector/mw826sth/specifications.html"}],
+ ['BenQ',"Short throw business & education","MX631ST",3200,1024,768,"1DLP lamp",null,{fx:[0.9,1.08],off:110,src:"https://www.benq.com/en-us/business/projector/mx631st/specifications.html"}],
+ ['BenQ',"Short throw business & education","MX808STH",3600,1024,768,"1DLP lamp",null,{fx:[0.61,0.61],off:115,src:"https://www.benq.com/en-ap/business/projector/mx808sth/specifications.html"}],
+ ['BenQ',"Short throw business & education","MX825ST",3300,1024,768,"1DLP lamp",null,{fx:[0.61,0.61],off:115,src:"https://www.benq.com/en-ap/business/projector/mx825st/specifications.html"}],
+ ['BenQ',"Short throw business & education","MX825STH",3500,1024,768,"1DLP lamp",null,{fx:[0.61,0.61],off:115,src:"https://www.benq.com/en-us/business/golf-simulator-projector/mx825sth/specifications.html"}],
+ ['BenQ',"Short throw home & gaming","HT2150ST",2200,1920,1080,"1DLP lamp",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/cinema/ht2150st/spec.html"}],
+ ['BenQ',"Short throw home & gaming","TH671ST",3000,1920,1080,"1DLP lamp",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/business/golf-simulator-projector/th671st/specifications.html"}],
+ ['BenQ',"Short throw home & gaming","TH682ST",3000,1920,1080,"1DLP lamp",null,{fx:[0.69,0.76],off:105,unc:1,src:"https://justprojectors.com.au/th682st.htm"}],
+ ['BenQ',"Short throw home & gaming","TH690ST",2300,1920,1080,"1DLP 4LED",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/gaming/th690st/spec.html"}],
+ ['BenQ',"Short throw home & gaming","TK700ST",3000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[0.9,1.08],off:110,src:"https://www.benq.com/en-us/projector/home-projectors/tk700st/spec.html"}],
+ ['BenQ',"Short throw home & gaming","TK700STi",3000,3840,2160,"1DLP lamp \u00b7 4K UHD XPR",null,{fx:[0.9,1.08],off:110,src:"https://www.benq.com/en-us/projector/gaming/tk700sti/spec.html"}],
+ ['BenQ',"Short throw home & gaming","TK705STi",3000,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[0.8,0.8],off:100,src:"https://www.benq.com/en-us/projector/home-projectors/tk705sti/spec.html"}],
+ ['BenQ',"Short throw home & gaming","TK710STi",3200,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/business/golf-simulator-projector/tk710sti/specifications.html"}],
+ ['BenQ',"Short throw home & gaming","X500i",2200,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/gaming/x500i/spec.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LK936ST",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lk936st/specifications.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LK936ST+",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],sv:[-60,60],sh:23,unc:1,src:"https://www.benq.com/content/dam/bb/de/produkt/projektor/Installationsprojektoren/LK936STplus/030322-LK936ST+_datenblatt_de.pdf"}],
+ ['BenQ',"Short throw installation (lens shift)","LK953ST",5000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lk953st/specifications.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LK954ST",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.eu/en-uk/business/projector/lk954st/specifications.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LU935ST",5500,1920,1200,"1DLP laser",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/golf-simulator-projector/lu935st/specifications.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LU951ST",5000,1920,1200,"1DLP laser",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lu951st/specifications.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LU960ST",5500,1920,1200,"1DLP laser",null,{fx:[0.77,0.84],off:0,sv:[-62,62],sh:24,src:"https://www.benq.eu/en-uk/business/projector/lu960st/specifications.html"}],
+ ['BenQ',"Short throw installation (lens shift)","LU960ST2",5200,1920,1200,"1DLP laser",null,{fx:[0.5,0.5],off:0,sv:[-55,55],sh:23,src:"https://www.benq.com/en-us/business/projector/lu960st2/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","AH30ST",3000,1920,1080,"1DLP 4LED",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/golf/ah30st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","AH500ST",4000,1920,1080,"1DLP laser",null,{fx:[0.499,0.499],off:112,src:"https://www.benq.com/en-us/business/house-mapping-projector/ah500st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","AH700ST",4000,1920,1080,"1DLP laser",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/golf/ah700st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","AK700ST",4000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/golf/ak700st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","AK800ST",5000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/golf/ak800st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","AK900ST",6000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/projector/golf/ak900st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","AW30ST",3200,1280,800,"1DLP 4LED",null,{fx:[0.72,0.87],off:100,src:"https://www.benq.com/en-us/projector/golf/aw30st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","LH600ST",2500,1920,1080,"1DLP LED",null,{fx:[0.69,0.83],off:100,src:"https://www.benq.com/en-us/business/golf-simulator-projector/lh600st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LH600ST+",3000,1920,1080,"1DLP 4LED",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/business/projector/lh600st-plus/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LH830ST",4000,1920,1080,"1DLP laser",null,{fx:[0.496,0.496],off:116,src:"https://www.benq.com/en-us/business/projector/lh830st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LH835ST",4000,1920,1080,"1DLP laser",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.eu/en-uk/business/projector/lh835st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LH860ST",5000,1920,1080,"1DLP laser",null,{fx:[0.5,0.5],off:105,src:"https://www.benq.com/en-us/projector/house-mapping/lh860st/spec.html"}],
+ ['BenQ',"Short throw simulation & mapping","LK830ST",4000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.496,0.496],off:114,src:"https://www.benq.com/en-us/business/projector/lk830st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LK835ST",4000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.eu/en-uk/business/projector/lk835st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LW500ST",2000,1280,800,"1DLP LED",null,{fx:[0.72,0.87],off:100,src:"https://www.benq.com/en-us/business/golf-simulator-projector/lw500st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LW600ST",2800,1280,800,"1DLP LED",null,{fx:[0.72,0.87],off:100,src:"https://www.benq.com/en-us/business/golf-simulator-projector/lw600st/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LW600ST+",3200,1280,800,"1DLP 4LED",null,{fx:[0.72,0.87],off:100,src:"https://www.benq.com/en-us/business/projector/lw600st-plus/specifications.html"}],
+ ['BenQ',"Short throw simulation & mapping","LW830ST",4000,1280,800,"1DLP laser",null,{fx:[0.521,0.521],off:112,src:"https://www.benq.com/en-us/business/projector/lw830st/specifications.html"}],
+ ['BenQ',"Ultra short throw","LH856UST",3500,1920,1080,"1DLP laser",null,{fx:[0.33,0.33],off:124.6,src:"https://www.benq.com/en-us/business/projector/lh856ust/specifications.html"}],
+ ['BenQ',"Ultra short throw","LH890UST",4000,1920,1080,"1DLP laser",null,{fx:[0.23,0.23],off:118.8,src:"https://www.benq.com/en-us/business/projector/lh890ust/specifications.html"}],
+ ['BenQ',"Ultra short throw","LH890USTD",4000,1920,1080,"1DLP laser",null,{fx:[0.23,0.23],unc:1,off:118.8,src:"https://www.projectorcentral.com/BenQ-LH890USTD.htm"}],
+ ['BenQ',"Ultra short throw","LU895UST",5000,1920,1200,"1DLP laser",null,{fx:[0.253,0.253],off:117,src:"https://www.benq.com/en-us/business/projector/lu895ust/specifications.html"}],
+ ['BenQ',"Ultra short throw","LU960UST",5200,1920,1200,"1DLP laser",null,{fx:[0.25,0.25],off:122,src:"https://www.benq.com/en-us/business/projector/lu960ust/specifications.html"}],
+ ['BenQ',"Ultra short throw","LW855UST",3500,1280,800,"1DLP laser",null,{fx:[0.35,0.35],off:121,sv:[-2,2],src:"https://www.benq.com/en-us/business/projector/lw855ust/specifications.html"}],
+ ['BenQ',"Ultra short throw","LW890UST",4000,1280,800,"1DLP laser",null,{fx:[0.24,0.24],off:117.3,src:"https://www.benq.com/en-us/business/projector/lw890ust/specifications.html"}],
+ ['BenQ',"Ultra short throw","LW890USTD",4000,1280,800,"1DLP laser",null,{fx:[0.24,0.24],unc:1,off:117.3,src:"https://www.projectorcentral.com/BenQ-LW890USTD.htm"}],
+ ['BenQ',"Ultra short throw","LX890UST",4000,1024,768,"1DLP laser",null,{fx:[0.3,0.3],unc:1,src:"https://www.projectorcentral.com/BenQ-LX890UST.htm"}],
+ ['BenQ',"Ultra short throw","MH856UST",3500,1920,1080,"1DLP lamp",null,{fx:[0.33,0.33],unc:1,off:124,src:"https://www.projectorcentral.com/BenQ-MH856UST.htm"}],
+ ['BenQ',"Ultra short throw","MH856UST+",3500,1920,1080,"1DLP lamp",null,{fx:[0.33,0.33],off:124,src:"https://www.benq.eu/en-uk/business/projector/mh856ustplus/specifications.html"}],
+ ['BenQ',"Ultra short throw","MW855UST",3500,1280,800,"1DLP lamp",null,{fx:[0.35,0.35],unc:1,off:122,sv:[0,8],src:"https://www.projectorcentral.com/BenQ-MW855UST.htm"}],
+ ['BenQ',"Ultra short throw","MW855UST+",3500,1280,800,"1DLP lamp",null,{fx:[0.35,0.35],off:122,sv:[-2,2],src:"https://www.benq.com/en-us/business/projector/mw855ustplus/specifications.html"}],
+ ['BenQ',"Ultra short throw","V5000i",2500,3840,2160,"1DLP RGB laser \u00b7 4K UHD XPR",null,{fx:[0.25,0.25],off:123.5,src:"https://www.benq.com/en-us/projector/tv-projector/v5000i/spec.html"}],
+ ['BenQ',"Ultra short throw","V5010i",2500,3840,2160,"1DLP RGB laser \u00b7 4K UHD XPR",null,{fx:[0.25,0.25],off:123.5,src:"https://www.benq.com/en-us/projector/tv-projector/v5010i/spec.html"}],
+ ['BenQ',"Ultra short throw","V7000i",2500,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.252,0.252],off:124.5,src:"https://www.benq.eu/en-uk/projector/tv-projector/v7000i/spec.html"}],
+ ['BenQ',"Ultra short throw","V7050i",2500,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.252,0.252],off:124.5,src:"https://www.benq.com/en-us/projector/tv-projector/v7050i/spec.html"}]
 ];
 const MODELS=RAW.map(r=>({id:(r[0]+'-'+r[2]).toLowerCase().replace(/[^a-z0-9]+/g,'-'),mfr:r[0],series:r[1],name:r[2],lm:r[3],rw:r[4],rh:r[5],tech:r[6],fam:r[7],...(r[8]||{})}));
+/* fixed-lens models (extra fx:[min,max]) carry their own one-lens family */
+MODELS.forEach(m=>{if(!m.fx)return;const [a,b]=m.fx;m.fam='FX:'+m.id;
+  FAM[m.fam]={name:`Built-in ${a===b?a+':1 fixed':a+'–'+b+':1 zoom'}`,src:m.src||'',verified:!m.unc,fixed:true,lenses:[{id:'fx',name:`Built-in ${a===b?a+':1 fixed lens':a+'–'+b+':1 zoom'}`,min:a,max:b}]};});
+/* lens shift limits. off = maker's "projection offset" (image bottom above the lens axis as % of image height: 100% = bottom edge on
+   the axis, 0% = centred), so the image centre sits at base = off − 50. sv (V range) and sh (±H) adjust around base; a lens's own
+   base / sv / sh win over the body's. A known offset with no range is fixed. null = unknown, so anything goes. */
+function shiftSpec(m,lens){if(!m)return null;const base=lens&&lens.base!=null?lens.base:m.off>0?+(m.off-50).toFixed(2):0;
+  const sv=lens&&lens.sv||m.sv,sh=lens&&lens.sh!=null?lens.sh:m.sh;
+  if(sv)return {base,v:[base+sv[0],base+sv[1]],h:sh||0};if(m.off!=null||lens&&lens.base!=null)return {base,v:[base,base],h:0,fixed:true};return null;}
+function restShift(m,lens){const s=shiftSpec(m,lens);return s?clamp(s.base,s.v[0],s.v[1]):0;}
 MODELS.push({id:'custom',mfr:'Other',series:'Custom',name:'Custom projector…',lm:10000,rw:1920,rh:1200,tech:'Enter your own specs',fam:null,custom:true});
 const MODEL=Object.fromEntries(MODELS.map(m=>[m.id,m]));
 const CUSTOM_LENS={id:'custom',name:'Custom lens / zoom range…',custom:true};
@@ -430,9 +628,9 @@ let uidN=1;const uid=p=>p+(uidN++).toString(36)+Math.random().toString(36).slice
 
 function newProjector(over={}){
   const m=MODEL[over.model]||MODEL['barco-udx-4k32'];
-  return Object.assign({id:uid('p'),name:'P'+(S?S.projectors.length+1:1),model:m.id,lens:defaultLens(m),zoom:.5,x:5,z:12,h:3.2,yaw:0,pitch:0,roll:0,shiftV:0,shiftH:0,content:'native',out:100,on:true,target:'auto',cLm:10000,cRw:1920,cRh:1200,cMin:1.2,cMax:1.8,cName:'My projector',cLensName:'My lens',lvl:'floor',color:COLORS[(S?S.projectors.length:0)%COLORS.length]},over);
+  return Object.assign({id:uid('p'),name:'P'+(S?S.projectors.length+1:1),model:m.id,lens:defaultLens(m),zoom:.5,x:5,z:12,h:3.2,yaw:0,pitch:0,roll:0,shiftV:restShift(m,lensesFor(m).find(l=>l.id===defaultLens(m))),shiftH:0,content:'native',out:100,on:true,target:'auto',cLm:10000,cRw:1920,cRh:1200,cMin:1.2,cMax:1.8,cName:'My projector',cLensName:'My lens',lvl:'floor',img:null,color:COLORS[(S?S.projectors.length:0)%COLORS.length]},over);
 }
-function newScreen(over={}){return Object.assign({id:uid('s'),name:'Screen '+(S?S.screens.length+1:1),type:'flat',w:6,h:3.375,aspect:'16:9',x:5,z:.15,elev:.5,yaw:0,tilt:0,R:8,convex:false,gain:1.0},over);}
+function newScreen(over={}){return Object.assign({id:uid('s'),name:'Screen '+(S?S.screens.length+1:1),type:'flat',w:6,h:3.375,aspect:'16:9',x:5,z:.15,elev:.5,yaw:0,tilt:0,R:8,convex:false,bend:'h',gain:1.0},over);}
 function newPerson(over={}){return Object.assign({id:uid('h'),type:'standing',x:5,z:6,hh:null,yaw:0,lvl:'floor'},over);}
 function newRiser(over={}){return Object.assign({id:uid('r'),name:'Riser '+((S&&S.risers?S.risers.length:0)+1),w:2.44,d:1.22,h:.4,x:siteDims().W/2,z:2.5,yaw:0,gain:.08},over);}
 function thDefaults(){return {stageW:18,stageD:11,stageH:1.0,flyH:16,apron:1.8,apronW:14,proW:13,proH:7.5,houseW:20,houseL:24,houseH:11,rise:1,run:12,
@@ -456,15 +654,21 @@ function baseAt(x,z,lvl){return onBalcony(x,z,lvl)?S.th.balH:groundY(x,z);}
 function lensPos(p){return V(p.x,baseAt(p.x,p.z,p.lvl)+p.h,p.z);}
 function projBasis(p){const m=new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(p.pitch*D2R,p.yaw*D2R,p.roll*D2R,'YXZ'));const e=m.elements;return {r:V(e[0],e[1],e[2]),u:V(e[4],e[5],e[6]),f:V(-e[8],-e[9],-e[10])};}
 function screenMatrix(s){const m=new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(s.tilt*D2R,s.yaw*D2R,0,'YXZ'));m.setPosition(s.x,groundY(s.x,s.z)+s.elev,s.z);return m;}
-function arcOf(s){return Math.min(s.w/Math.max(s.R,.1),2*PI);}
+/* curved screens bend left to right ('h'), top to bottom ('v') or both ways ('both', a dish) */
+function bendOf(s){return s.type!=='curved'?null:s.bend||'h';}
+function arcOf(s){return bendOf(s)&&bendOf(s)!=='v'?Math.min(s.w/Math.max(s.R,.1),2*PI):0;}
+function arcVOf(s){const b=bendOf(s);return b==='v'||b==='both'?Math.min(s.h/Math.max(s.R,.1),PI):0;}
 function screenLocal(s,u,v){
   if(s.type!=='curved')return {p:[(u-.5)*s.w,v*s.h,0],n:[0,0,1]};
-  const R=Math.max(s.R,.1),A=arcOf(s),th=(u-.5)*A,sn=Math.sin(th),cs=Math.cos(th);
-  if(s.convex)return {p:[R*sn,v*s.h,-(R-R*cs)],n:[sn,0,cs]};
-  return {p:[R*sn,v*s.h,R-R*cs],n:[-sn,0,cs]};
+  /* th: angle across, ph: angle up; centre of curvature at z = +R (concave) or −R (convex); bottom edge stays at y = 0 */
+  const R=Math.max(s.R,.1),A=arcOf(s),B=arcVOf(s),cv=s.convex?-1:1,th=(u-.5)*A,ph=(v-.5)*B;
+  const st=Math.sin(th),ct=Math.cos(th),sp=Math.sin(ph),cp=Math.cos(ph);
+  return {p:[A?R*st*cp:(u-.5)*s.w,B?R*(sp+Math.sin(B/2)):v*s.h,cv*(R-R*ct*cp)],n:[-cv*st*cp,-cv*sp,ct*cp]};
 }
 function screenWorld(s,u,v,M){M=M||screenMatrix(s);const l=screenLocal(s,u,v);const p=V(...l.p).applyMatrix4(M);const n=V(...l.n).transformDirection(M);return {p,n};}
-function chordOf(s){if(s.type!=='curved')return s.w;const A=arcOf(s),R=s.R;return A>=PI?2*R:2*R*Math.sin(A/2);}
+function chordOf(s){const A=arcOf(s),R=s.R;if(!A)return s.w;return A>=PI?2*R:2*R*Math.sin(A/2);}
+function chordHOf(s){const B=arcVOf(s);return B?2*s.R*Math.sin(B/2):s.h;}
+function segsOf(a){return a?Math.max(8,Math.ceil(a/(4*D2R))):1;}
 function riserMatrix(r){const m=new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0,r.yaw*D2R,0));m.setPosition(r.x,groundY(r.x,r.z),r.z);return m;}
 function riserTopAt(x,z){let best=-Infinity;for(const r of (S.risers||[])){const dx=x-r.x,dz=z-r.z,c=Math.cos(r.yaw*D2R),s=Math.sin(r.yaw*D2R);const lx=dx*c-dz*s,lz=dx*s+dz*c;
   if(Math.abs(lx)<=r.w/2&&Math.abs(lz)<=r.d/2)best=Math.max(best,groundY(r.x,r.z)+r.h);}return best;}
@@ -503,7 +707,7 @@ function resize(){const r=view.getBoundingClientRect();renderer.setSize(r.width,
 new ResizeObserver(resize).observe(view);
 
 /* ---------- surfaces (sampled grids) ---------- */
-function disposeGroup(g){g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());}});while(g.children.length)g.remove(g.children[0]);}
+function disposeGroup(g){g.traverse(o=>{if(o.geometry)o.geometry.dispose();const ms=[].concat(o.material||[],o.userData.mat0||[]);ms.forEach(m=>{if(!m.userData.shared)m.dispose();});});while(g.children.length)g.remove(g.children[0]);}
 function makeSurface(key,kind,label,nu,nv,fn,gain,ref,owner,pick){
   const N=nu*nv,P=new Float32Array(N*3),Nn=new Float32Array(N*3);
   for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){const k=j*nu+i;const r=fn(i/(nu-1),j/(nv-1));P[k*3]=r.p.x;P[k*3+1]=r.p.y;P[k*3+2]=r.p.z;Nn[k*3]=r.n.x;Nn[k*3+1]=r.n.y;Nn[k*3+2]=r.n.z;}
@@ -523,8 +727,8 @@ function buildSurfaces(){
   disposeGroup(G.surf);disposeGroup(G.aux);surfaces=[];pickables=pickables.filter(m=>!m.userData.surfKey);
   const q=S.quality==='fine'?1:.55;const step=.07/q;
   for(const s of S.screens){
-    const M=screenMatrix(s);const len=s.type==='curved'?arcOf(s)*s.R:s.w;
-    const nu=clamp(Math.round(len/step),16,s.type==='curved'?260:180),nv=clamp(Math.round(s.h/step),10,140);
+    const M=screenMatrix(s);const len=arcOf(s)?arcOf(s)*s.R:s.w,ht=arcVOf(s)?arcVOf(s)*s.R:s.h;
+    const nu=clamp(Math.round(len/step),16,arcOf(s)?260:180),nv=clamp(Math.round(ht/step),10,arcVOf(s)?200:140);
     surfaces.push(makeSurface('scr:'+s.id,'screen',s.name,nu,nv,(u,v)=>screenWorld(s,u,v,M),s.gain,s,'scr:'+s.id,{kind:'scr',id:s.id}));
   }
   for(const r of (S.risers||[])){const M=riserMatrix(r);const nrot=new THREE.Matrix3().setFromMatrix4(M);
@@ -697,8 +901,9 @@ async function loadModelData(name,ext,data,fresh){
 }
 /* keep the source file in this browser so the plan reopens with its model */
 function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('throwline',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}});}
-async function idbPut(v){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put(v,'model');t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
-async function idbGet(){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('files','readonly');const r=t.objectStore('files').get('model');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbPut(v,key='model'){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put(v,key);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+async function idbGet(key='model'){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('files','readonly');const r=t.objectStore('files').get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbDel(key){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').delete(key);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
 function renderModel(){
   const M=S.model;
   const a=sec('Imported model (SketchUp)');
@@ -768,8 +973,8 @@ function buildTheatre(rs){
 function buildOccluders(){
   quads=[];
   if(S.mode==='theatre')for(const q of thOcc){const nn=q.a.clone().cross(q.b);quads.push({owner:q.key,ox:q.o.x,oy:q.o.y,oz:q.o.z,ax:q.a.x,ay:q.a.y,az:q.a.z,bx:q.b.x,by:q.b.y,bz:q.b.z,nx:nn.x,ny:nn.y,nz:nn.z,aa:q.a.lengthSq(),bb:q.b.lengthSq()});}
-  for(const s of S.screens){const M=screenMatrix(s);const K=s.type==='curved'?Math.max(8,Math.ceil(arcOf(s)/(4*D2R))):1;
-    for(let k=0;k<K;k++){const o=screenWorld(s,k/K,0,M).p,p1=screenWorld(s,(k+1)/K,0,M).p,p2=screenWorld(s,k/K,1,M).p;const a=p1.clone().sub(o),b=p2.clone().sub(o),n=a.clone().cross(b);
+  for(const s of S.screens){const M=screenMatrix(s);const K=segsOf(arcOf(s)),J=segsOf(arcVOf(s));
+    for(let k=0;k<K;k++)for(let j=0;j<J;j++){const o=screenWorld(s,k/K,j/J,M).p,p1=screenWorld(s,(k+1)/K,j/J,M).p,p2=screenWorld(s,k/K,(j+1)/J,M).p;const a=p1.clone().sub(o),b=p2.clone().sub(o),n=a.clone().cross(b);
       quads.push({owner:'scr:'+s.id,ox:o.x,oy:o.y,oz:o.z,ax:a.x,ay:a.y,az:a.z,bx:b.x,by:b.y,bz:b.z,nx:n.x,ny:n.y,nz:n.z,aa:a.lengthSq(),bb:b.lengthSq()});}}
   for(const r of (S.risers||[])){const M=riserMatrix(r);for(const f of riserFaces(r)){const fn=f[4];const o=V(...fn(0,0)).applyMatrix4(M),p1=V(...fn(1,0)).applyMatrix4(M),p2=V(...fn(0,1)).applyMatrix4(M);const a=p1.clone().sub(o),b=p2.clone().sub(o),n=a.clone().cross(b);
     quads.push({owner:'rs:'+r.id,ox:o.x,oy:o.y,oz:o.z,ax:a.x,ay:a.y,az:a.z,bx:b.x,by:b.y,bz:b.z,nx:n.x,ny:n.y,nz:n.z,aa:a.lengthSq(),bb:b.lengthSq()});}}
@@ -793,8 +998,9 @@ function buildObjects(){
     if(S.sel&&S.sel.id===p.id){g.updateMatrixWorld(true);G.objs.add(new THREE.BoxHelper(body,TC['--accent']));}
   }
   const ss=S.sel&&S.sel.kind==='scr'&&S.screens.find(s=>s.id===S.sel.id);
-  if(ss){const M=screenMatrix(ss);const pts=[];const K=ss.type==='curved'?64:1;
-    for(let k=0;k<=K;k++)pts.push(screenWorld(ss,k/K,0,M).p);for(let k=K;k>=0;k--)pts.push(screenWorld(ss,k/K,1,M).p);pts.push(pts[0].clone());
+  if(ss){const M=screenMatrix(ss);const pts=[];const K=arcOf(ss)?64:1,J=arcVOf(ss)?64:1;
+    for(let k=0;k<=K;k++)pts.push(screenWorld(ss,k/K,0,M).p);for(let j=1;j<=J;j++)pts.push(screenWorld(ss,1,j/J,M).p);
+    for(let k=K-1;k>=0;k--)pts.push(screenWorld(ss,k/K,1,M).p);for(let j=J-1;j>=0;j--)pts.push(screenWorld(ss,0,j/J,M).p);
     const n=screenWorld(ss,.5,.5,M).n.multiplyScalar(.03);pts.forEach(p=>p.add(n));
     G.objs.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:TC['--accent']})));}
   const sr=S.sel&&S.sel.kind==='rsr'&&(S.risers||[]).find(r=>r.id===S.sel.id);
@@ -865,8 +1071,10 @@ function segCap(Lx,Ly,Lz,dx,dy,dz,c){if(!segBox(Lx,Ly,Lz,dx,dy,dz,c.box))return 
 function compute(){
   const t0=performance.now();PJ=prep();buildCaps();
   const nP=PJ.length;const pAcc=PJ.map(()=>({}));const shadowBy={};
+  const cview=S.view==='content';CSLOT=cview?PJ.map((q,k)=>k).filter(k=>PJ[k].on).slice(0,CMAX):[];const slotOf=new Int8Array(nP).fill(-1);CSLOT.forEach((k,j)=>slotOf[k]=j);
   for(const sf of surfaces){
     const P=sf.P,Nn=sf.N3,E=sf.E,cnt=sf.cnt,src=sf.src,sh=sf.sh;const isScr=sf.kind==='screen';
+    if(cview){if(!sf.W0){sf.W0=new Float32Array(sf.N*4);sf.W1=new Float32Array(sf.N*4);}else{sf.W0.fill(0);sf.W1.fill(0);}}const wg=sf.gain/PI/Math.max(1,S.target);
     const acc=PJ.map(()=>({sum:0,n:0}));const shp=isScr?(shadowBy[sf.key]=new Uint32Array(S.people.length)):null;
     for(let i=0;i<sf.N;i++){
       const px=P[i*3],py=P[i*3+1],pz=P[i*3+2],nx=Nn[i*3],ny=Nn[i*3+1],nz=Nn[i*3+2];
@@ -874,20 +1082,22 @@ function compute(){
       for(let k=0;k<nP;k++){const q=PJ[k];if(!q.on)continue;
         const dx=px-q.L.x,dy=py-q.L.y,dz=pz-q.L.z;const z=dx*q.f.x+dy*q.f.y+dz*q.f.z;if(z<1e-3)continue;
         const xn=(dx*q.r.x+dy*q.r.y+dz*q.r.z)/z-q.cx,yn=(dx*q.u.x+dy*q.u.y+dz*q.u.z)/z-q.cy;const hw=q.Wc/2,hh=q.Hc/2;
-        if(xn<-hw||xn>hw||yn<-hh||yn>hh)continue;
+        const out=xn<-hw||xn>hw||yn<-hh||yn>hh,sl=slotOf[k];if(out&&(sl<0||Math.abs(xn)>hw*1.25||Math.abs(yn)>hh*1.25))continue;
         const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);let ci=-(dx*nx+dy*ny+dz*nz)/dist;if(ci<=0){if(sf.rear)ci=-ci;else continue;}
         if(quads.length&&blockedByQuads(q.L.x,q.L.y,q.L.z,dx,dy,dz,sf.owner))continue;
         if(BVH&&S.mode==='model'&&bvhTrace(q.L.x,q.L.y,q.L.z,dx,dy,dz,1e-3,1-.02/dist,true))continue;
         let hit=-1;for(let j=0;j<CAPS.length;j++){if(segCap(q.L.x,q.L.y,q.L.z,dx,dy,dz,CAPS[j])){hit=j;break;}}
-        if(hit>=0){s=1;if(shp)shp[hit]++;continue;}
+        if(hit>=0){if(!out){s=1;if(shp)shp[hit]++;}continue;}
         const ca=z/dist;const rr=.5*(xn/hw)*(xn/hw)+.5*(yn/hh)*(yn/hh);const vig=(1-(1-q.un)*rr)*q.vn;
-        const ek=q.sigma*ci/(ca*z*z)*vig;e+=ek;c++;if(ek>bestE){bestE=ek;best=k;}
+        const ek=q.sigma*ci/(ca*z*z)*vig;if(sl>=0)(sl<4?sf.W0:sf.W1)[i*4+(sl&3)]=ek*wg;if(out)continue;e+=ek;c++;if(ek>bestE){bestE=ek;best=k;}
         acc[k].sum+=ek;acc[k].n++;
       }
       E[i]=e;cnt[i]=c;src[i]=best;sh[i]=s;
     }
     PJ.forEach((q,k)=>{pAcc[k][sf.key]=acc[k];});
+    if(cview)contentAttrs(sf);
   }
+
   // stats
   const amb=S.ambient;stats={scr:{},proj:{},warn:[],ms:0};
   for(const sf of surfaces){if(sf.kind!=='screen')continue;
@@ -896,6 +1106,7 @@ function compute(){
     const avg=cov?sum/cov:0;const Lamb=amb*g;
     stats.scr[sf.ref.id]={sf,cov:cov/sf.N,avg,mn:cov?mn:0,mx,ov:cov?ov/sf.N:0,shd:shd/sf.N,contrast:Lamb>0?(avg+Lamb)/Lamb:Infinity,shadowBy:shadowBy[sf.key]};
   }
+  if(cview){const top=Math.max(S.target,...Object.values(stats.scr).map(x=>x.avg));CUNI.EXP.value=S.target/top;CEXPN=top;contentUniforms();}
   const meshes=rayBegin();
   PJ.forEach((q,k)=>{
     const hit=castRay(q.L,q.f.clone().add(q.r.clone().multiplyScalar(q.cx)).add(q.u.clone().multiplyScalar(q.cy)).normalize(),meshes);
@@ -921,6 +1132,47 @@ const RAMP=[[0,[24,18,66]],[.2,[72,38,138]],[.42,[160,48,140]],[.62,[230,86,62]]
 function ramp(t){t=clamp(t,0,1);for(let i=1;i<RAMP.length;i++){if(t<=RAMP[i][0]){const [t0,c0]=RAMP[i-1],[t1,c1]=RAMP[i];const f=(t-t0)/(t1-t0);return [c0[0]+(c1[0]-c0[0])*f,c0[1]+(c1[1]-c0[1])*f,c0[2]+(c1[2]-c0[2])*f].map(v=>v/255);}}return RAMP[RAMP.length-1][1].map(v=>v/255);}
 function scaleRange(){return S.lumUnit==='lux'?[3,3000]:[1,1000];} // nits or lux
 function tFor(val){const [a,b]=scaleRange();return val<=0?0:(Math.log10(val)-Math.log10(a))/(Math.log10(b)-Math.log10(a));}
+/* ---------- content preview: one JPG per projector, projected onto every surface ---------- */
+/* compute() gives each surface vertex the light it receives from up to CMAX projectors (cw0 / cw1, as a fraction of the target
+   luminance, zero where blocked; EXP rescales so the brightest screen's average shows as white); the fragment shader projects each picture through its projector's frustum so it stays sharp */
+const CMAX=8,IMGS={};let CSLOT=[],CEXPN=0;
+const WHITE=new THREE.DataTexture(new Uint8Array([255,255,255,255]),1,1,THREE.RGBAFormat);WHITE.needsUpdate=true;
+const CUNI={EXP:{value:1},T:{value:Array(CMAX).fill(WHITE)},PL:{value:[]},PR:{value:[]},PU:{value:[]},PF:{value:[]},PG:{value:[]},PA:{value:[]}};
+for(let k=0;k<CMAX;k++){['PL','PR','PU','PF'].forEach(n=>CUNI[n].value.push(V(0,0,1)));CUNI.PG.value.push(new THREE.Vector4(0,0,1,1));CUNI.PA.value.push(new THREE.Vector4(1,1,1,0));}
+function cMat(side){let f='';
+  for(let k=0;k<CMAX;k++){const w=(k<4?'vW0.':'vW1.')+'xyzw'[k%4];
+    f+=`  if(${w}>0.){vec3 d=vPos-PL[${k}];float z=dot(d,PF[${k}]);if(z>0.){vec2 uv=(vec2(dot(d,PR[${k}]),dot(d,PU[${k}]))/z-PG[${k}].xy)/PG[${k}].zw*PA[${k}].xy*PA[${k}].z+.5;
+    if(uv.x>=0.&&uv.x<=1.&&uv.y>=0.&&uv.y<=1.)c+=texture2D(T[${k}],uv).rgb*${w}*EXP;}}\n`;}
+  const m=new THREE.ShaderMaterial({uniforms:CUNI,vertexColors:true,side,
+    vertexShader:`attribute vec4 cw0;attribute vec4 cw1;varying vec4 vW0;varying vec4 vW1;varying vec3 vPos;varying vec3 vCol;
+void main(){vW0=cw0;vW1=cw1;vCol=color;vec4 wp=modelMatrix*vec4(position,1.);vPos=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`,
+    fragmentShader:`uniform float EXP;uniform sampler2D T[${CMAX}];uniform vec3 PL[${CMAX}];uniform vec3 PR[${CMAX}];uniform vec3 PU[${CMAX}];uniform vec3 PF[${CMAX}];uniform vec4 PG[${CMAX}];uniform vec4 PA[${CMAX}];
+varying vec4 vW0;varying vec4 vW1;varying vec3 vPos;varying vec3 vCol;
+void main(){vec3 c=vCol;
+${f}  gl_FragColor=vec4(min(c,vec3(1.)),1.);}`});
+  m.userData.shared=true;return m;}
+const CMAT={front:cMat(THREE.FrontSide),double:cMat(THREE.DoubleSide)};
+/* per-slot projector frustum; the picture is fitted inside the content area without stretching, and turned for ceiling hangs */
+function contentUniforms(){CSLOT.forEach((k,j)=>{const q=PJ[k],im=q.p.img,ci=im&&IMGS[im.key];
+  CUNI.PL.value[j].copy(q.L);CUNI.PR.value[j].copy(q.r);CUNI.PU.value[j].copy(q.u);CUNI.PF.value[j].copy(q.f);CUNI.PG.value[j].set(q.cx,q.cy,q.Wc,q.Hc);
+  const ia=ci?ci.w/ci.h:q.Wc/q.Hc,ca=q.Wc/q.Hc;CUNI.T.value[j]=ci?ci.tex:WHITE;
+  CUNI.PA.value[j].set(ia>ca?1:ca/ia,ia>ca?ia/ca:1,Math.cos(q.p.roll*D2R)<0?-1:1,0);});}
+function contentAttrs(sf){const g=sf.mesh.geometry;
+  for(const [n,a] of [['cw0',sf.W0],['cw1',sf.W1]]){const at=g.attributes[n];if(at&&at.array===a)at.needsUpdate=true;else g.setAttribute(n,new THREE.BufferAttribute(a,4));}}
+async function readJpg(file){if(!/^image\/jpe?g$/.test(file.type)&&!/\.jpe?g$/i.test(file.name))throw new Error('not a jpg');
+  const bmp=await createImageBitmap(file);const cv=fitCanvas(bmp,2048);const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.9));return {cv,blob};}
+function fitCanvas(src,max){const sc=Math.min(1,max/Math.max(src.width,src.height));const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(src.width*sc));cv.height=Math.max(1,Math.round(src.height*sc));cv.getContext('2d').drawImage(src,0,0,cv.width,cv.height);return cv;}
+function imgEntry(cv){const t=new THREE.CanvasTexture(cv);t.anisotropy=renderer.capabilities.getMaxAnisotropy();return {tex:t,w:cv.width,h:cv.height,thumb:fitCanvas(cv,240).toDataURL('image/jpeg',.8)};}
+async function setContent(p,file){
+  try{const {cv,blob}=await readJpg(file);const key=uid('img');IMGS[key]=imgEntry(cv);idbPut({name:file.name,blob},'img:'+key).catch(()=>{});
+    const old=p.img;p.img={key,name:file.name,w:cv.width,h:cv.height};dropImg(old);changed();if(S.view!=='content')setView('content');render();}
+  catch(e){toast('Could not read that file. Choose a .jpg image.');}}
+/* forget an image once no projector uses it */
+function dropImg(im){if(!im||S.projectors.some(p=>p.img&&p.img.key===im.key))return;const c=IMGS[im.key];if(c)c.tex.dispose();delete IMGS[im.key];idbDel('img:'+im.key).catch(()=>{});}
+/* IMGS[key]: entry when loaded, null while loading, false when this browser doesn't have it */
+async function loadContent(){for(const p of S.projectors){const im=p.img;if(!im||im.key in IMGS)continue;IMGS[im.key]=null;
+  try{const v=await idbGet('img:'+im.key);if(!v){IMGS[im.key]=false;}else{IMGS[im.key]=imgEntry(fitCanvas(await createImageBitmap(v.blob),2048));}}catch(e){IMGS[im.key]=false;}
+  dirty.compute=true;if(tab==='proj')render();}}
 let PCOL=[];
 const OVC=[null,[.36,.52,.72],[.95,.62,.2],[.88,.28,.25],[.75,.3,.8]];
 function paint(){
@@ -932,10 +1184,13 @@ function paint(){
       else if(S.view==='real'){const Lv=sf.E[i]*g+S.ambient*g;const k=1-Math.exp(-Lv/120);r=br*.35+(1-br*.35)*k;gg=bg*.35+(1-bg*.35)*k;b=bb*.35+(.97-bb*.35)*k;}
       else if(S.view==='overlap'){if(c>0){const o=OVC[Math.min(c,4)];r=o[0];gg=o[1];b=o[2];}}
       else if(S.view==='edges'){if(c>0&&sf.src[i]>=0){const pc=PCOL[sf.src[i]];const k=c>1?.5:.26;r=br+(pc.r-br)*k;gg=bg+(pc.g-bg)*k;b=bb+(pc.b-bb)*k;}}
+      else if(S.view==='content'){r=br*.3;gg=bg*.3;b=bb*.3;}
       else if(S.view==='source'){if(c>0&&sf.src[i]>=0){const pc=new THREE.Color(S.projectors[sf.src[i]].color);const k=c>1?1:.8;r=pc.r*k;gg=pc.g*k;b=pc.b*k;}}
-      if(sf.sh[i]&&S.view!=='real'){r=r*.55+.0;gg=gg*.55;b=b*.55;if(c===0){r=br*.5;gg=bg*.5;b=bb*.5;}}
+      if(sf.sh[i]&&S.view!=='real'&&S.view!=='content'){r=r*.55+.0;gg=gg*.55;b=b*.55;if(c===0){r=br*.5;gg=bg*.5;b=bb*.5;}}
       col[i*3]=r;col[i*3+1]=gg;col[i*3+2]=b;}
     sf.mesh.geometry.attributes.color.needsUpdate=true;
+    const mesh=sf.mesh;if(!mesh.userData.mat0)mesh.userData.mat0=mesh.material;
+    mesh.material=S.view==='content'&&sf.W0?(mesh.userData.mat0.side===THREE.DoubleSide?CMAT.double:CMAT.front):mesh.userData.mat0;
   }
   drawLegend();
 }
@@ -1004,6 +1259,7 @@ function drawLegend(){
     lg.append(tk);
   }else if(S.view==='overlap'){lg.append(el('div','lbl','Projectors overlapping'));const w=el('div','swatches');[1,2,3,4].forEach(n=>{const s=el('span');const i=el('i');i.style.background=`rgb(${OVC[n].map(v=>v*255|0)})`;s.append(i,n===4?'4+':String(n)+(n===2?' (blend)':''));w.append(s);});lg.append(w);}
   else if(S.view==='edges'){lg.append(el('div','lbl','Image edges · line = edge of each picture, tint = covered, deeper tint = overlap'));const w=el('div','swatches');S.projectors.filter(p=>p.on).forEach(p=>{const s=el('span');const i=el('i');i.style.background=p.color;s.append(i,p.name);w.append(s);});lg.append(w);}
+  else if(S.view==='content'){lg.append(el('div','lbl',`Content preview · full white = ${Math.round(CEXPN||S.target)} nits${CEXPN>S.target+.5?' (brightest screen; target '+S.target+')':' (target)'}`+(S.projectors.filter(p=>p.on).length>CMAX?` · first ${CMAX} projectors shown`:'')));lg.append(el('div','note','Projectors without an image show plain white. Brightness follows falloff, overlap and shadows.'));}
   else if(S.view==='source'){lg.append(el('div','lbl','Brightest projector on each point'));const w=el('div','swatches');S.projectors.forEach(p=>{const s=el('span');const i=el('i');i.style.background=p.color;s.append(i,p.name);w.append(s);});lg.append(w);}
   else{lg.append(el('div','lbl','Realistic glow · includes ambient light'));}
   const sh=el('div','note');sh.style.marginTop='4px';sh.textContent='Darkened patches = people shadows';lg.append(sh);
@@ -1126,12 +1382,12 @@ function renderProj(){
   s.append(list);panel.append(s);
   const p=S.sel&&S.sel.kind==='proj'&&S.projectors.find(x=>x.id===S.sel.id);if(!p)return;
   const m=modelOf(p),lens=lensOf(p);
-  const e=sec(p.name,[btn('Duplicate',()=>{const c=JSON.parse(JSON.stringify(p));c.id=uid('p');c.name=p.name+'b';c.x+=1;c.color=COLORS[S.projectors.length%COLORS.length];S.projectors.push(c);S.sel={kind:'proj',id:c.id};changed('obj');render();}),btn('Delete',()=>{S.projectors=S.projectors.filter(x=>x!==p);S.sel=null;changed('obj');render();},'btn sm danger')]);
+  const e=sec(p.name,[btn('Duplicate',()=>{const c=JSON.parse(JSON.stringify(p));c.id=uid('p');c.name=p.name+'b';c.x+=1;c.color=COLORS[S.projectors.length%COLORS.length];S.projectors.push(c);S.sel={kind:'proj',id:c.id};changed('obj');render();}),btn('Delete',()=>{S.projectors=S.projectors.filter(x=>x!==p);dropImg(p.img);S.sel=null;changed('obj');render();},'btn sm danger')]);
   const g=el('div','grid2');
   const nm=el('input');nm.type='text';nm.id='f-'+p.id+'-name';nm.value=p.name;nm.addEventListener('input',()=>{p.name=nm.value;changed();});
   const cl=el('input');cl.type='color';cl.id='f-'+p.id+'-color';cl.value=p.color;cl.style.height='28px';cl.addEventListener('input',()=>{p.color=cl.value;changed('obj');});
   g.append(fld('Name',nm),fld('Colour',cl));
-  g.append(fld('Make & model',sel(p,'model',modelOptions(),{on:'obj',after:()=>{const mm=modelOf(p);p.lens=defaultLens(mm);render();}}),{wide:true}));
+  g.append(fld('Make & model',sel(p,'model',modelOptions(),{on:'obj',after:()=>{const mm=modelOf(p);p.lens=defaultLens(mm);p.shiftV=restShift(mm,lensOf(p));p.shiftH=0;render();}}),{wide:true}));
   if(m.custom){
     const cn=el('input');cn.type='text';cn.id='f-'+p.id+'-cName';cn.value=p.cName||'';cn.addEventListener('input',()=>{p.cName=cn.value;changed();});
     g.append(fld('Model name',cn,{wide:true}));
@@ -1139,7 +1395,7 @@ function renderProj(){
     const sv=el('div','fld wide');sv.append(btn('Save to my equipment',()=>{const id='u-'+Math.random().toString(36).slice(2,9);LIB.projectors.push({id,mfr:'',name:(p.cName||'My projector').trim(),lm:p.cLm,rw:p.cRw,rh:p.cRh,tech:'Custom specs',fam:''});saveLib();p.model=id;changed('obj');render();toast('Saved. It now appears under “My equipment” in the model list.');}));g.append(sv);
   }
   const lensOpts=lensesFor(m).map(l=>{const [a,b]=lensRangeFor(l,m,p);return [l.id,l.custom?l.name:`${l.name}${l.tr?` → ${a===b?a:a+'–'+b}:1 on this chip`:''}`];});
-  g.append(fld('Lens',sel(p,'lens',lensOpts,{after:()=>render()}),{wide:true}));
+  g.append(fld('Lens',sel(p,'lens',lensOpts,{after:()=>{p.shiftV=restShift(modelOf(p),lensOf(p));p.shiftH=0;render();}}),{wide:true}));
   if(lens.custom){
     const ln=el('input');ln.type='text';ln.id='f-'+p.id+'-cLensName';ln.value=p.cLensName||'';ln.addEventListener('input',()=>{p.cLensName=ln.value;});
     g.append(fld('Lens name',ln,{wide:true}));
@@ -1150,13 +1406,16 @@ function renderProj(){
   g.append(fld('Zoom (throw ratio)',zr,{wide:true,ro:'tr'}));
   e.append(g);
   if(lens.note)e.append(el('p','note',esc(lens.note)));
-  e.append(el('p','note',`${esc(m.tech)} · ${(+m.lm).toLocaleString()} lm · ${m.rw}×${m.rh} (${(m.rw/m.rh).toFixed(2)}:1)${m.fam?' · '+esc(FAM[m.fam].name):''}${m.user?' · from My equipment':''}. Add or import your own projectors and lenses in Catalog → My equipment.`));
+  e.append(el('p','note',`${esc(m.tech)} · ${(+m.lm).toLocaleString()} lm · ${m.rw}×${m.rh} (${(m.rw/m.rh).toFixed(2)}:1)${m.fam?' · '+esc(FAM[m.fam].name):''}${m.user?' · from My equipment':''}${m.src?` · <a href="${esc(m.src)}" target="_blank" rel="noopener">spec source</a>`:''}. Add or import your own projectors and lenses in Catalog → My equipment.`));
   const pos=sec('Position & aim');const g2=el('div','grid3');
   g2.append(fld('X',num(p,'x',{min:-500,max:1500})),fld('Z',num(p,'z',{min:-500,max:1500})),fld('Height above ground',num(p,'h',{min:-5,max:100})));
   if(S.mode==='theatre'&&S.th.bal)g2.append(fld('Level',sel(p,'lvl',[['floor','House floor / stage'],['balcony','Balcony']],{on:'obj'})));
   g2.append(fld('Yaw °',num(p,'yaw',{kind:'n',step:.5,min:-360,max:360})),fld('Pitch °',num(p,'pitch',{kind:'n',step:.5,min:-90,max:90})),fld('Roll °',num(p,'roll',{kind:'n',step:.5,min:-180,max:180})));
-  g2.append(fld('Lens shift V %',num(p,'shiftV',{kind:'n',step:1,min:-150,max:150})),fld('Lens shift H %',num(p,'shiftH',{kind:'n',step:1,min:-100,max:100})),fld('Light output %',num(p,'out',{kind:'n',step:1,min:1,max:100})));
+  const ss=shiftSpec(m,lens),shV=num(p,'shiftV',{kind:'n',step:1,min:-150,max:150}),shH=num(p,'shiftH',{kind:'n',step:1,min:-100,max:100});if(ss){shV.disabled=!!ss.fixed;shH.disabled=!ss.h;}
+  g2.append(fld('Lens shift V %',shV),fld('Lens shift H %',shH),fld('Light output %',num(p,'out',{kind:'n',step:1,min:1,max:100})));
   pos.append(g2);
+  if(ss&&ss.fixed)pos.append(el('p','note',`Fixed lens offset${m.off!=null?` (${m.off}% projection offset)`:''}: the image centre sits ${ss.base}% of the image height above the lens axis (below it when hung upside down). There is no lens shift: “Place level for target” positions it the way it would be installed, while “Aim at target” tilts it instead (which adds keystone).`));
+  else if(ss)pos.append(el('p','note',`Lens shift range: V ${ss.v[0]}% to ${ss.v[1]}%${ss.h?`, H ±${ss.h}%`:', no horizontal shift'}. V is where the image centre sits above the lens axis, in % of image height (0 = centred).`));
   pos.append(el('p','note','Yaw 0° points toward the front (−Z). Pitch is positive upward; −90° points straight down for floor projection. Roll 180° for an inverted ceiling hang, 90° for portrait. Lens shift is in % of image height / width; check your lens’s actual shift range.'));
   const g3=el('div','grid2');
   g3.append(fld('Content aspect',sel(p,'content',[['native','Native chip'],['1.78','16:9'],['1.6','16:10'],['1.33','4:3'],['1.85','1.85:1 flat'],['2.39','2.39:1 scope'],['1','1:1'],['0.5625','9:16 portrait'],['3.56','32:9']],{})),
@@ -1164,9 +1423,9 @@ function renderProj(){
   pos.append(g3);
   pos.append(chk(p,'on','Projector on',{on:'obj'}));
   const fit=sec('Fit to target');
-  fit.append(el('p','note','Uses the target surface, or the first screen if set to “whatever the beam hits”.'));
+  fit.append(el('p','note','Uses the target surface, or the first screen if set to “whatever the beam hits”. “Place level for target” sets the projector level and square to the surface, at the distance that fills it and the height its lens offset needs, which is how short-throw and ultra-short-throw projectors are installed.'));
   const r=el('div','row');
-  r.append(btn('Aim at target',()=>{fitProj(p,'aim');}),btn('Zoom to fill',()=>{fitProj(p,'fill');}),btn('Zoom to fit inside',()=>{fitProj(p,'fit');}),btn('Move to fill distance',()=>{fitProj(p,'move');}));
+  r.append(btn('Aim at target',()=>{fitProj(p,'aim');}),btn('Zoom to fill',()=>{fitProj(p,'fill');}),btn('Zoom to fit inside',()=>{fitProj(p,'fit');}),btn('Move to fill distance',()=>{fitProj(p,'move');}),btn('Place level for target',()=>{fitProj(p,'place');}));
   fit.append(r);
   const out=el('dl','readout');out.dataset.ro='pread';fit.append(out);
   const w=el('ul','msgs');w.dataset.ro='pwarn';fit.append(w);
@@ -1174,19 +1433,36 @@ function renderProj(){
   const dm=sec('Dimensions');
   dm.append(el('p','note','All measurements are taken from the center of the projector body. Distances run along the floor plan: square to each screen face, and straight to the walls. Left and right of a screen centre are as seen facing the screen. Height is above the floor, not the stage deck.'));
   const dro=el('dl','readout');dro.dataset.ro='pdim';dm.append(dro);
-  panel.append(e,pos,fit,dm);
+  const ct=sec('Content image');const im=p.img,ci=im&&IMGS[im.key];
+  if(im){const r2=el('div','row');r2.style.flexWrap='nowrap';if(ci){const t=el('img');t.src=ci.thumb;t.alt='';t.style.cssText='width:96px;height:auto;border:1px solid var(--line);border-radius:4px';r2.append(t);}
+    r2.append(el('div','note',`${esc(im.name)} · ${im.w} × ${im.h} px${ci===false?' · <b>not in this browser</b>, choose it again':ci===null?' · loading…':''}`));ct.append(r2);}
+  const fi=el('input');fi.type='file';fi.accept='.jpg,.jpeg,image/jpeg';fi.id='f-'+p.id+'-img';fi.addEventListener('change',()=>{const f=fi.files[0];if(f)setContent(p,f);});
+  const fl=el('label','fld wide');fl.append(el('span','',im?'Replace JPG':'Choose a JPG'),fi);ct.append(fl);
+  if(im)ct.append(btn('Remove image',()=>{const o=p.img;p.img=null;dropImg(o);changed();render();}));
+  ct.append(el('p','note','Show it with Show → Content preview. The picture fills the projector’s content area without stretching (upside-down hangs are turned upright). Its brightness follows the light that actually lands, with the target luminance as full white. Images are kept in this browser, not in the plan code.'));
+  panel.append(e,pos,ct,fit,dm);
 }
 function targetScreen(p){if(p.target!=='auto'){const s=S.screens.find(s=>s.id===p.target);if(s)return s;}const st=stats.proj[p.id];if(st&&st.tgt&&st.tgt.kind==='screen')return st.tgt.ref;return S.screens[0]||null;}
 function fitProj(p,mode){
   const s=targetScreen(p);if(!s){toast('Add a screen first');return;}
   const c=screenWorld(s,.5,.5).p;
-  if(mode==='aim'||mode==='fill'||mode==='fit'||mode==='move'){const L=lensPos(p);const d=c.clone().sub(L);p.yaw=+(Math.atan2(-d.x,-d.z)/D2R).toFixed(2);p.pitch=+(Math.atan2(d.y,Math.hypot(d.x,d.z))/D2R).toFixed(2);p.shiftV=0;p.shiftH=0;}
+  /* place: level and square to the target, at the distance that fills it and the height its offset needs (how ST / UST units are installed) */
+  if(mode==='place'){const n=screenWorld(s,.5,.5).n;const nh=V(n.x,0,n.z);if(nh.lengthSq()<1e-6){toast('The target faces up or down. Use “Aim at target” instead.');return;}nh.normalize();
+    const L0=lensPos(p);if(L0.clone().sub(c).dot(nh)<0)nh.negate();
+    p.yaw=+(Math.atan2(nh.x,nh.z)/D2R).toFixed(2);p.pitch=0;p.shiftH=0;p.shiftV=restShift(modelOf(p),lensOf(p));
+    const q=prep().find(x=>x.p===p);const D=Math.max(chordOf(s)/q.Wc,chordHOf(s)/q.Hc);const L=c.clone().addScaledVector(nh,D);L.y=c.y-q.cy*D*Math.cos(p.roll*D2R);
+    p.x=+L.x.toFixed(3);p.z=+L.z.toFixed(3);p.h=+(L.y-baseAt(L.x,L.z,p.lvl)).toFixed(3);
+    if(p.h<0)toast(`Level, ${p.name} would need its lens ${fmtLen(-p.h)} below the floor. Hang it upside down (roll 180°) or use a smaller image.`);
+    changed('obj');render();return;}
+  if(mode==='aim'||mode==='fill'||mode==='fit'||mode==='move'){const L=lensPos(p);const d=c.clone().sub(L);p.yaw=+(Math.atan2(-d.x,-d.z)/D2R).toFixed(2);p.pitch=+(Math.atan2(d.y,Math.hypot(d.x,d.z))/D2R).toFixed(2);const ss=shiftSpec(modelOf(p),lensOf(p));p.shiftV=ss?clamp(0,ss.v[0],ss.v[1]):0;p.shiftH=0;}
   if(mode!=='aim'){
-    const q=prep().find(x=>x.p===p);const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const sw=chordOf(s),sh=s.h;const L=lensPos(p);let dist=c.distanceTo(L);
+    const q=prep().find(x=>x.p===p);const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const sw=chordOf(s),sh=chordHOf(s);const L=lensPos(p);let dist=c.distanceTo(L);
     const qf=Math.max(sw/kw,sh/kh),qi=Math.min(sw/kw,sh/kh);
     if(mode==='move'){const tr=q.tr;const need=tr*qf;const dir=L.clone().sub(c).normalize();const nl=c.clone().add(dir.multiplyScalar(need));p.x=+nl.x.toFixed(3);p.z=+nl.z.toFixed(3);p.h=+(nl.y-groundY(nl.x,nl.z)).toFixed(3);}
     else{const tr=dist/(mode==='fill'?qf:qi);const [a,b]=lensRange(p);if(b>a)p.zoom=clamp((tr-a)/(b-a),0,1);if(tr<a-1e-3||tr>b+1e-3)toast(`Needs throw ratio ${tr.toFixed(2)}:1; this lens covers ${a}–${b}:1. See lens suggestions below.`);}
   }
+  /* an offset the lens can't shift away throws the image centre off the lens axis: tilt so the centre, not the axis, lands on the target */
+  if(p.shiftV&&mode!=='move'){const q=prep().find(x=>x.p===p);p.pitch=+(p.pitch-Math.atan(q.cy)/D2R*Math.cos(p.roll*D2R)).toFixed(2);}
   changed('obj');render();
 }
 
@@ -1196,20 +1472,20 @@ function renderScr(){
   const s=sec('Screens & surfaces',[btn('+ Flat',()=>addScreen('flat')),btn('+ Curved',()=>addScreen('curved'))]);
   const list=el('div','list');
   S.screens.forEach(x=>{const it=el('button','item');it.type='button';it.setAttribute('aria-current',S.sel&&S.sel.id===x.id?'true':'false');const d=el('span','dot');d.style.background='var(--screen-base)';d.style.border='1px solid var(--edge)';
-    const mid=el('div');mid.style.minWidth='0';mid.append(el('div','nm',esc(x.name)),el('div','sub',`${x.type==='curved'?(x.convex?'Convex':'Curved')+' R '+fmtLen(x.R,1)+' · ':''}${fmtLen(x.w,1)} × ${fmtLen(x.h,1)} · gain ${x.gain}`));
+    const mid=el('div');mid.style.minWidth='0';mid.append(el('div','nm',esc(x.name)),el('div','sub',`${x.type==='curved'?(x.convex?'Convex':'Curved')+{h:'',v:' top–bottom',both:' dish'}[bendOf(x)]+' R '+fmtLen(x.R,1)+' · ':''}${fmtLen(x.w,1)} × ${fmtLen(x.h,1)} · gain ${x.gain}`));
     const ro=el('div','ro');ro.dataset.ro='slist-'+x.id;it.append(d,mid,ro);it.addEventListener('click',()=>select('scr',x.id));list.append(it);});
   if(!S.screens.length)list.append(el('p','note','No screens. Room walls and floor still receive light; add a screen to get per-screen readings.'));
   s.append(list);panel.append(s);
   const x=S.sel&&S.sel.kind==='scr'&&S.screens.find(a=>a.id===S.sel.id);if(!x)return;
   const e=sec(x.name,[btn('Duplicate',()=>{const c=JSON.parse(JSON.stringify(x));c.id=uid('s');c.name=x.name+' copy';c.x+=1;S.screens.push(c);S.sel={kind:'scr',id:c.id};changed('surf');render();}),btn('Delete',()=>{S.screens=S.screens.filter(a=>a!==x);S.projectors.forEach(p=>{if(p.target===x.id)p.target='auto';});S.sel=null;changed('surf');render();},'btn sm danger')]);
   const g=el('div','grid2');const nm=el('input');nm.type='text';nm.id='f-'+x.id+'-name';nm.value=x.name;nm.addEventListener('input',()=>{x.name=nm.value;changed();});
-  g.append(fld('Name',nm),fld('Shape',sel(x,'type',[['flat','Flat'],['curved','Curved (cylindrical)']],{on:'surf',after:()=>render()})));
+  g.append(fld('Name',nm),fld('Shape',sel(x,'type',[['flat','Flat'],['curved','Curved']],{on:'surf',after:()=>render()})));
   const syncH=()=>{const a=aspectVal(x.aspect);if(a)x.h=+(x.w/a).toFixed(3);};
   const hIn=num(x,'h',{min:.1,max:300,on:'surf',after:()=>{x.aspect='custom';const sl=$('#f-'+x.id+'-aspect');if(sl)sl.value='custom';}});
-  g.append(fld(x.type==='curved'?'Width (along arc)':'Width',num(x,'w',{min:.1,max:2000,on:'surf',after:()=>{syncH();hIn.value=+toD(x.h).toFixed(3);}})),fld('Height',hIn));
+  const bd=bendOf(x);g.append(fld(bd==='h'||bd==='both'?'Width (along arc)':'Width',num(x,'w',{min:.1,max:2000,on:'surf',after:()=>{syncH();hIn.value=+toD(x.h).toFixed(3);}})),fld(bd==='v'||bd==='both'?'Height (along arc)':'Height',hIn));
   g.append(fld('Aspect ratio',sel(x,'aspect',ASPECTS,{on:'surf',after:()=>{syncH();render();}})),fld('Screen gain',num(x,'gain',{kind:'n',step:.05,min:.05,max:5,on:'surf'})));
-  if(x.type==='curved'){g.append(fld('Radius',num(x,'R',{min:.3,max:500,on:'surf'}),{ro:'arc'}),fld('Curve',sel(x,'convex',[['false','Concave (wraps viewer)'],['true','Convex (bulges out)']],{on:'surf',after:()=>{x.convex=x.convex==='true'||x.convex===true;}})));
-    const full=btn('Make full 360°',()=>{x.w=+(2*PI*x.R).toFixed(3);x.aspect='custom';changed('surf');render();});const fw=el('div','fld wide');fw.append(full);g.append(fw);}
+  if(x.type==='curved'){if(!x.bend)x.bend='h';g.append(fld('Curves',sel(x,'bend',[['h','Left to right'],['v','Top to bottom'],['both','Both ways (dish)']],{on:'surf',after:()=>render()})),fld('Radius',num(x,'R',{min:.3,max:500,on:'surf'}),{ro:'arc'}),fld('Curve',sel(x,'convex',[['false','Concave (wraps viewer)'],['true','Convex (bulges out)']],{on:'surf',after:()=>{x.convex=x.convex==='true'||x.convex===true;}})));
+    if(bd!=='v'){const full=btn('Make full 360°',()=>{x.w=+(2*PI*x.R).toFixed(3);x.aspect='custom';changed('surf');render();});const fw=el('div','fld wide');fw.append(full);g.append(fw);}}
   e.append(g);
   const pos=sec('Placement');const g2=el('div','grid3');
   g2.append(fld('X (centre)',num(x,'x',{min:-500,max:1500,on:'surf'})),fld('Z',num(x,'z',{min:-500,max:1500,on:'surf'})),fld('Bottom above ground',num(x,'elev',{min:-10,max:200,on:'surf'})));
@@ -1219,7 +1495,7 @@ function renderScr(){
   const r=el('div','row');const W=siteDims();
   r.append(btn('On front wall',()=>{x.z=.05;x.yaw=0;x.tilt=0;changed('surf');render();}),btn('On left wall',()=>{x.x=.05;x.yaw=90;x.tilt=0;changed('surf');render();}),btn('On right wall',()=>{x.x=W.W-.05;x.yaw=-90;x.tilt=0;changed('surf');render();}),btn('Lay flat on floor',()=>{x.tilt=-90;x.elev=.01;changed('surf');render();}));
   pos.append(r);
-  pos.append(el('p','note','Yaw 0° faces +Z (toward the audience from the front wall). Tilt rotates about the bottom edge; −90° lays the surface on the floor. Concave curves wrap toward the side the screen faces; widen to 2πR for a full panorama.'));
+  pos.append(el('p','note','Yaw 0° faces +Z (toward the audience from the front wall). Tilt rotates about the bottom edge; −90° lays the surface on the floor. Concave curves wrap toward the side the screen faces. Curves sets the direction: left to right, top to bottom (the top and bottom edges come toward you), or both ways as a dish. Widen a left-to-right curve to 2πR for a full panorama.'));
   const out=el('dl','readout');out.dataset.ro='sread';pos.append(out);
   const w=el('ul','msgs');w.dataset.ro='swarn';pos.append(w);
   panel.append(e,pos);
@@ -1315,7 +1591,10 @@ function projWarnings(p){
   if(!q.on){out.push({lvl:'warn',t:`${p.name} is switched off.`});return out;}
   if(!st.hit)out.push({lvl:'bad',t:`${p.name}: the beam centre hits nothing. Aim it at a surface.`});
   if(st.keystone!=null&&st.keystone>20)out.push({lvl:'warn',t:`${p.name} meets its surface ${st.keystone.toFixed(0)}° off-axis. Expect keystone/warp correction and uneven brightness.`});
-  if(Math.abs(p.shiftV)>60||Math.abs(p.shiftH)>30)out.push({lvl:'warn',t:`${p.name}: lens shift V ${p.shiftV}% / H ${p.shiftH}% is beyond what many zoom lenses allow. Check the lens spec.`});
+  const ss=shiftSpec(q.m,q.lens);
+  if(ss){const e=.05;if(p.shiftV<ss.v[0]-e||p.shiftV>ss.v[1]+e||Math.abs(p.shiftH)>ss.h+e)out.push({lvl:ss.fixed?'bad':'warn',t:ss.fixed?`${p.name}: the ${q.m.name} has a fixed lens offset and no lens shift. Set shift V to ${ss.base}% and H to 0%, or pick the model again.`:`${p.name}: lens shift V ${p.shiftV}% / H ${p.shiftH}% is outside this lens's range of V ${ss.v[0]}% to ${ss.v[1]}%, H ±${ss.h}%.`});}
+  else if(Math.abs(p.shiftV)>60||Math.abs(p.shiftH)>30)out.push({lvl:'warn',t:`${p.name}: lens shift V ${p.shiftV}% / H ${p.shiftH}% is beyond what many zoom lenses allow. Check the lens spec.`});
+  if(q.m.unc)out.push({lvl:'warn',t:`${p.name}: specs for the ${q.m.name} come from a partial or dealer listing. Confirm them with the maker.`});
   if(q.lens.big&&modelOf(p).noBig)out.push({lvl:'bad',t:`${p.name}: this lens is not listed for the ${q.m.name}.`});
   if(q.lens.est)out.push({lvl:'warn',t:`${p.name}: the ${q.lens.name} ratio on this chip is estimated from neighbouring lenses.`});
   return out;
@@ -1332,7 +1611,7 @@ function allWarnings(){
 }
 function copyReport(){
   const lines=[`BEAMERBUDDY PLAN: ${S.name}`,`Venue: ${S.mode==='model'?`Imported model ${S.model.name}${MODELGEO?` (${fmtLen(MODELGEO.size[0])} × ${fmtLen(MODELGEO.size[1])} × ${fmtLen(MODELGEO.size[2])})`:''}`:S.mode==='theatre'?`Theatre: proscenium ${fmtLen(S.th.proW)} × ${fmtLen(S.th.proH)}, stage ${fmtLen(S.th.stageW)} × ${fmtLen(S.th.stageD)} at ${fmtLen(S.th.stageH)}, house ${fmtLen(S.th.houseW)} × ${fmtLen(S.th.houseL)}, ${S.th.bal?`balcony at ${fmtLen(S.th.balH)}`:'no balcony'}`:S.mode==='indoor'?`Indoor ${fmtLen(S.room.L)} L × ${fmtLen(S.room.W)} W × ${fmtLen(S.room.H)} H`:`Outdoor ${fmtLen(S.site.L)} × ${fmtLen(S.site.W)}, slope ${S.site.rise}/${S.site.run} (${(slope()*100).toFixed(1)}%)`}`,`Ambient ${S.ambient} lx · derate ${S.derate}% · target ${S.target} nits`,'','SCREENS'];
-  S.screens.forEach(x=>{const st=stats.scr[x.id];if(st)lines.push(`- ${x.name}: ${fmtLen(x.w,2)} × ${fmtLen(x.h,2)}${x.type==='curved'?` curved R ${fmtLen(x.R)}`:''}, gain ${x.gain}; coverage ${pct(st.cov)}, avg ${fmtL(st.avg,x.gain)}, min ${fmtL(st.mn,x.gain)}, max ${fmtL(st.mx,x.gain)}, overlap ${pct(st.ov)}, shadowed ${pct(st.shd)}`);});
+  S.screens.forEach(x=>{const st=stats.scr[x.id];if(st)lines.push(`- ${x.name}: ${fmtLen(x.w,2)} × ${fmtLen(x.h,2)}${x.type==='curved'?` ${x.convex?'convex':'curved'}${{h:'',v:' top–bottom',both:' dish'}[bendOf(x)]} R ${fmtLen(x.R)}`:''}, gain ${x.gain}; coverage ${pct(st.cov)}, avg ${fmtL(st.avg,x.gain)}, min ${fmtL(st.mn,x.gain)}, max ${fmtL(st.mx,x.gain)}, overlap ${pct(st.ov)}, shadowed ${pct(st.shd)}`);});
   lines.push('','PROJECTORS');
   S.projectors.forEach(p=>{const st=stats.proj[p.id];if(!st)return;const q=st.q;lines.push(`- ${p.name}: ${q.m.mfr} ${q.m.name}, ${q.lens.name} at ${q.tr.toFixed(2)}:1; position X ${fmtLen(p.x)} Z ${fmtLen(p.z)} H ${fmtLen(p.h)} yaw ${p.yaw}° pitch ${p.pitch}°; throw ${fmtLen(st.dist)}; lands on ${st.tgt?st.tgt.label:'nothing'}`);});
   lines.push('','WARNINGS');allWarnings().forEach(w=>lines.push('- '+w.t));
@@ -1383,15 +1662,15 @@ function equipModal(){openModal('Import or export equipment',b=>{
 function renderCatalog(){
   renderEquipment();
   const s=sec('Projector catalog');
-  const q=el('input');q.type='text';q.id='f-cat-q';q.placeholder='Filter: e.g. Griffyn, UDX, 4K, 20000';s.append(q);
+  const q=el('input');q.type='text';q.id='f-cat-q';q.placeholder='Filter: e.g. Griffyn, UDX, BenQ, short throw, 4K';s.append(q);
   const w=el('div','tblwrap');w.style.maxHeight='46vh';s.append(w);
   const draw=()=>{const f=q.value.toLowerCase();let h='<table><thead><tr><th>Maker</th><th>Model</th><th>Lumens</th><th>Native</th><th>Type</th><th>Lenses</th></tr></thead><tbody>';
-    MODELS.filter(m=>!m.custom&&(m.mfr+' '+m.series+' '+m.name+' '+m.lm+' '+m.tech+' '+m.rw).toLowerCase().includes(f)).forEach(m=>{h+=`<tr><td>${m.mfr}</td><td>${esc(m.name)}${m.spec?' ✓':''}</td><td class="n">${m.lm.toLocaleString()}</td><td class="n">${m.rw}×${m.rh}</td><td>${esc(m.tech)}</td><td>${esc(FAM[m.fam].name)}</td></tr>`;});
+    MODELS.filter(m=>!m.custom&&(m.mfr+' '+m.series+' '+m.name+' '+m.lm+' '+m.tech+' '+m.rw).toLowerCase().includes(f)).forEach(m=>{h+=`<tr><td>${m.mfr}</td><td>${esc(m.name)}${m.spec?' ✓':''}</td><td class="n">${m.lm.toLocaleString()}</td><td class="n">${m.rw}×${m.rh}</td><td>${esc(m.tech)}</td><td>${esc(FAM[m.fam].name)}${m.off?` · offset ${m.off}%`:''}</td></tr>`;});
     w.innerHTML=h+'</tbody></table>';};
   q.addEventListener('input',draw);draw();
-  s.append(el('p','note','Lumen figures are the published class ratings as best known (✓ = checked against the current spec sheet). Christie and Barco quote ISO, ANSI and centre lumens differently, and model lists change. Choose “Custom projector…” for anything missing, such as cinema, legacy or rental-specific models.'));
+  s.append(el('p','note','Lumen figures are the published class ratings as best known (✓ = checked against the current spec sheet). Christie and Barco quote ISO, ANSI and centre lumens differently; BenQ figures are ANSI lumens from BenQ’s spec pages. Most BenQ models have a built-in lens with a fixed projection offset, shown in the Lenses column. Model lists change. Choose “Custom projector…” for anything missing, such as cinema, legacy or rental-specific models.'));
   panel.append(s);
-  Object.values(FAM).forEach(fm=>{const s2=sec(fm.name);s2.append(el('p','note','Source: '+esc(fm.src)));const t=el('div','tblwrap');let h='<table><thead><tr><th>Lens</th><th>Throw ratio</th><th>Notes</th></tr></thead><tbody>';
+  Object.values(FAM).filter(fm=>!fm.fixed).forEach(fm=>{const s2=sec(fm.name);s2.append(el('p','note','Source: '+esc(fm.src)));const t=el('div','tblwrap');let h='<table><thead><tr><th>Lens</th><th>Throw ratio</th><th>Notes</th></tr></thead><tbody>';
     fm.lenses.forEach(l=>{const r=l.tr?Object.entries(l.tr).map(([k,v])=>`${k} ${v[0]===v[1]?v[0]:v[0]+'–'+v[1]}`).join(' · '):(l.min===l.max?l.min:l.min+'–'+l.max)+':1';h+=`<tr><td>${esc(l.name)}</td><td class="mono">${r}</td><td>${esc([l.note,l.big?'Griffyn 4K35/50 only within Griffyn':'',l.est?'estimated':''].filter(Boolean).join('; '))}</td></tr>`;});
     t.innerHTML=h+'</tbody></table>';s2.append(t);panel.append(s2);});
 }
@@ -1412,18 +1691,18 @@ function updateReadouts(){
   if(p&&stats.proj[p.id]){const st=stats.proj[p.id],q=st.q;const d=st.dist;
     setRO('tr',`${q.tr.toFixed(2)}:1 (${q.a}–${q.b})`);
     const s=targetScreen(p);let fitTxt='';
-    if(s){const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const qf=Math.max(chordOf(s)/kw,s.h/kh);fitTxt=`<dt>To fill ${esc(s.name)}</dt><dd>${fmtLen(q.a*qf)} – ${fmtLen(q.b*qf)} throw</dd>`;}
+    if(s){const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const qf=Math.max(chordOf(s)/kw,chordHOf(s)/kh);fitTxt=`<dt>To fill ${esc(s.name)}</dt><dd>${fmtLen(q.a*qf)} – ${fmtLen(q.b*qf)} throw</dd>`;}
     setRO('pread',`<dt>Throw distance</dt><dd>${fmtLen(d)}</dd><dt>Image at throw</dt><dd>${d?fmtLen(q.Wc*d)+' × '+fmtLen(q.Hc*d):'—'}</dd><dt>Image diagonal</dt><dd>${d?fmtLen(Math.hypot(q.Wc,q.Hc)*d):'—'}</dd><dt>Lumens on content</dt><dd>${Math.round(q.lmContent).toLocaleString()} lm</dd><dt>Lands on</dt><dd>${st.tgt?esc(st.tgt.label):'nothing'}</dd><dt>Average on it</dt><dd>${st.tgt?fmtL(st.avg,st.tgt.gain):'—'}</dd><dt>Off-axis angle</dt><dd>${st.keystone!=null?st.keystone.toFixed(1)+'°':'—'}</dd>${fitTxt}`);
     const ws=projWarnings(p).concat(stats.warn.filter(w=>w.t.includes(' '+p.name+' ')));setRO('pwarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));
-    if(s){const L=lensPos(p);const dist=screenWorld(s,.5,.5).p.distanceTo(L);const m=modelOf(p);const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const need=dist/Math.max(chordOf(s)/kw,s.h/kh);
+    if(s){const L=lensPos(p);const dist=screenWorld(s,.5,.5).p.distanceTo(L);const m=modelOf(p);const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const need=dist/Math.max(chordOf(s)/kw,chordHOf(s)/kh);
       const fits=lensesFor(m).filter(l=>!l.custom).map(l=>({l,r:lensRangeFor(l,m,p)})).filter(o=>need>=o.r[0]-1e-3&&need<=o.r[1]+1e-3);
       setRO('psug',`<p class="note">At ${fmtLen(dist)} from ${esc(s.name)}, filling it needs <b class="mono">${need.toFixed(2)}:1</b>. ${fits.length?'Lenses that reach it: '+fits.map(o=>esc(o.l.name.split(' (')[0])).join(', ')+'.':'No lens in this family reaches that ratio. Move the projector or pick another model.'}</p>`);}
   }
   const x=S.sel&&S.sel.kind==='scr'&&S.screens.find(a=>a.id===S.sel.id);
   if(x&&stats.scr[x.id]){const st=stats.scr[x.id];const u=st.mx>0?st.mn/st.mx:0;
-    setRO('arc',`${(arcOf(x)/D2R).toFixed(0)}° arc`);
+    setRO('arc',{h:`${(arcOf(x)/D2R).toFixed(0)}° arc`,v:`${(arcVOf(x)/D2R).toFixed(0)}° arc, top to bottom`,both:`${(arcOf(x)/D2R).toFixed(0)}° across × ${(arcVOf(x)/D2R).toFixed(0)}° up`}[bendOf(x)]||'');
     const hitters=S.projectors.filter(p=>{const sp=stats.proj[p.id];return sp&&sp.tgt&&sp.tgt.key==='scr:'+x.id;}).map(p=>p.name);
-    setRO('sread',`<dt>Area</dt><dd>${S.units==='ft'?(x.w*x.h*FT*FT).toFixed(1)+' ft²':(x.w*x.h).toFixed(1)+' m²'}</dd><dt>Chord width</dt><dd>${fmtLen(chordOf(x))}</dd><dt>Covered</dt><dd>${pct(st.cov)}</dd><dt>Average</dt><dd>${fmtL(st.avg,x.gain)}</dd><dt>Min – max</dt><dd>${fmtL(st.mn,x.gain)} – ${fmtL(st.mx,x.gain)}</dd><dt>Uniformity</dt><dd>${pct(u)}</dd><dt>Blend overlap</dt><dd>${pct(st.ov)}</dd><dt>Shadowed by people</dt><dd>${pct(st.shd)}</dd><dt>Contrast at ${S.ambient} lx</dt><dd>${isFinite(st.contrast)?st.contrast.toFixed(0)+':1':'∞'}</dd><dt>Aimed here</dt><dd>${hitters.length?esc(hitters.join(', ')):'—'}</dd>`);
+    setRO('sread',`<dt>Area</dt><dd>${S.units==='ft'?(x.w*x.h*FT*FT).toFixed(1)+' ft²':(x.w*x.h).toFixed(1)+' m²'}</dd><dt>Chord width</dt><dd>${fmtLen(chordOf(x))}</dd>${arcVOf(x)?`<dt>Chord height</dt><dd>${fmtLen(chordHOf(x))}</dd>`:''}<dt>Covered</dt><dd>${pct(st.cov)}</dd><dt>Average</dt><dd>${fmtL(st.avg,x.gain)}</dd><dt>Min – max</dt><dd>${fmtL(st.mn,x.gain)} – ${fmtL(st.mx,x.gain)}</dd><dt>Uniformity</dt><dd>${pct(u)}</dd><dt>Blend overlap</dt><dd>${pct(st.ov)}</dd><dt>Shadowed by people</dt><dd>${pct(st.shd)}</dd><dt>Contrast at ${S.ambient} lx</dt><dd>${isFinite(st.contrast)?st.contrast.toFixed(0)+':1':'∞'}</dd><dt>Aimed here</dt><dd>${hitters.length?esc(hitters.join(', ')):'—'}</dd>`);
     const ws=[];if(st.shadowBy)S.people.forEach((h,i)=>{if(st.shadowBy[i]>0)ws.push({lvl:'bad',t:`${personLabel(h,i)} shadows ${pct(st.shadowBy[i]/st.sf.N)} of this screen.`});});
     if(st.cov>0&&st.avg<S.target*.7)ws.push({lvl:'warn',t:`Below the ${fmtL(S.target,x.gain)} target.`});else if(st.cov>0)ws.push({lvl:'ok',t:`Average is ${(st.avg/S.target*100).toFixed(0)}% of the target.`});
     setRO('swarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));}
@@ -1480,11 +1759,11 @@ function dimPoints(){const out=[];
   S.screens.forEach(s=>out.push({id:s.id,t:s.name,pos:screenWorld(s,.5,0).p,scr:s}));
   (S.risers||[]).forEach(r=>out.push({id:r.id,t:r.name,pos:V(r.x,groundY(r.x,r.z)+r.h,r.z)}));
   S.people.forEach((h,i)=>out.push({id:h.id,t:personLabel(h,i),pos:V(h.x,personBase(h),h.z),ppl:true}));return out;}
-/* plan view of a screen (bottom edge, tilt ignored): d = distance square to the face (+ in front), lat = offset from its centre line (+ right when facing it) */
+/* plan view of a screen (its mid-height line, tilt ignored): d = distance square to the face (+ in front), lat = offset from its centre line (+ right when facing it) */
 function toScreenPlan(s,x,z){const c=Math.cos(s.yaw*D2R),sn=Math.sin(s.yaw*D2R),dx=x-s.x,dz=z-s.z;const lx=dx*c-dz*sn,lz=dx*sn+dz*c;
   let ux=lx,uz=0,nx=0,nz=1,edge=false;
-  if(s.type==='curved'){const R=Math.max(s.R,.1),A=arcOf(s),cv=s.convex?-1:1;let th=Math.atan2(lx,cv*(cv*R-lz));
-    if(Math.abs(th)>A/2){th=clamp(th,-A/2,A/2);edge=true;}const l=screenLocal(s,th/A+.5,0);ux=l.p[0];uz=l.p[2];nx=l.n[0];nz=l.n[2];}
+  if(arcOf(s)){const R=Math.max(s.R,.1),A=arcOf(s),cv=s.convex?-1:1;let th=Math.atan2(lx,cv*(cv*R-lz));
+    if(Math.abs(th)>A/2){th=clamp(th,-A/2,A/2);edge=true;}const l=screenLocal(s,th/A+.5,.5);ux=l.p[0];uz=l.p[2];nx=l.n[0];nz=l.n[2];}
   const ex=lx-ux,ez=lz-uz,dn=ex*nx+ez*nz;const d=edge?Math.hypot(ex,ez)*(dn<0?-1:1):dn;
   return {d,lat:lx,edge,foot:[s.x+ux*c+uz*sn,s.z-ux*sn+uz*c]};}
 /* walls around a plan point as [name, axis, coordinate]; outdoor sites have none */
@@ -1504,7 +1783,7 @@ function dimsFor(A,walls){const out=[],{x,z}=A.pos,f=floorY(x,z),at=(px,pz)=>V(p
     out.push({k:ax,a:at(x,z),b,tag:`<i class="d">${esc(t)}</i>${fmtLen(m)}`,row:['To '+t,fmtLen(m)]});});
   S.screens.forEach(s=>{if(A.scr===s)return;const r=toScreenPlan(s,x,z),side=Math.abs(r.lat)<.0005?'on':r.lat<0?'left of':'right of';
     const perp=`${fmtLen(Math.abs(r.d))}${r.d<0?' behind':''}${r.edge?' to its end':''}`;
-    out.push({k:'s',a:at(x,z),b:at(...r.foot),leg:s.type==='curved'?null:[at(...r.foot),at(s.x,s.z)],
+    out.push({k:'s',a:at(x,z),b:at(...r.foot),leg:arcOf(s)?null:[at(...r.foot),at(s.x,s.z)],
       tag:`<i class="d">${esc(s.name)}</i><i class="z">⟂ ${perp}</i><i class="x">${side==='on'?'on centre':fmtLen(Math.abs(r.lat))+' '+(side==='left of'?'L':'R')}</i>`,
       row:[`To ${s.name} (square to face)`,`${perp} · ${side==='on'?'on centre line':fmtLen(Math.abs(r.lat))+' '+side+' centre'}`]});});
   return out;}
@@ -1572,14 +1851,14 @@ function exportMatrix(){const E=new THREE.Matrix4();
   if(S.mode==='model'&&MODELGEO){const m=MODELGEO.mn;E.makeScale(1/(+S.model.scale||1),1/(+S.model.scale||1),1/(+S.model.scale||1))
     .multiply(new THREE.Matrix4().makeRotationY(-(+S.model.rot||0)*D2R)).multiply(new THREE.Matrix4().makeTranslation(m[0],m[1],m[2]));}
   return new THREE.Matrix4().set(1,0,0,0, 0,0,-1,0, 0,1,0,0, 0,0,0,1).multiply(E);}
-/* planar grid surfaces collapse to one quad; curved screens keep a facet every ~3° */
-function gridQuads(sf){const {nu,nv,P,N3}=sf;const ref=sf.ref;
-  const K=sf.kind==='screen'&&ref&&ref.type==='curved'?clamp(Math.ceil(arcOf(ref)/(3*D2R)),8,nu-1):1;
-  const cols=[];for(let k=0;k<=K;k++)cols.push(Math.round(k/K*(nu-1)));const rows=[0,nv-1];
+/* planar grid surfaces collapse to one quad; curved screens keep a facet every ~3° in each curved direction */
+function gridQuads(sf){const {nu,nv,P,N3}=sf;const ref=sf.kind==='screen'?sf.ref:null;
+  const fac=(a,n)=>ref&&a?clamp(Math.ceil(a/(3*D2R)),8,n-1):1;const K=fac(ref&&arcOf(ref),nu),J=fac(ref&&arcVOf(ref),nv);
+  const cols=[];for(let k=0;k<=K;k++)cols.push(Math.round(k/K*(nu-1)));const rows=[];for(let j=0;j<=J;j++)rows.push(Math.round(j/J*(nv-1)));
   const pt=(i,j)=>{const k=j*nu+i;return [P[k*3],P[k*3+1],P[k*3+2]];};
   const a0=V(...pt(0,0)),a1=V(...pt(1,0)),a2=V(...pt(0,1));const flip=a1.clone().sub(a0).cross(a2.clone().sub(a0)).dot(V(N3[0],N3[1],N3[2]))<0;
   const pos=[],uv=[];const push=(i,j)=>{pos.push(...pt(i,j));uv.push(i/(nu-1),j/(nv-1));};
-  for(let c=0;c<cols.length-1;c++){const i0=cols[c],i1=cols[c+1],j0=rows[0],j1=rows[1];
+  for(let c=0;c<cols.length-1;c++)for(let r=0;r<rows.length-1;r++){const i0=cols[c],i1=cols[c+1],j0=rows[r],j1=rows[r+1];
     const q=flip?[[i0,j0],[i1,j1],[i1,j0],[i0,j0],[i0,j1],[i1,j1]]:[[i0,j0],[i1,j0],[i1,j1],[i0,j0],[i1,j1],[i0,j1]];q.forEach(([i,j])=>push(i,j));}
   return {pos,uv};}
 /* heatmap as currently shown, one pixel per sample, upscaled so SketchUp filters it smoothly */
@@ -1753,7 +2032,7 @@ function preset(name){
   }
   S.projectors.forEach(p=>{if(p.target==='auto'&&S.screens[0])p.target='auto';});
 }
-function fitTemp(p,s){const c=screenWorld(s,.5,.5).p;aimAt(p,c);const q=prep().find(x=>x.p===p);const dist=lensPos(p).distanceTo(c);const tr=dist/Math.max(chordOf(s)/(q.Wc/q.W1),s.h/(q.Hc/q.W1));const [a,b]=lensRange(p);p.zoom=clamp((tr-a)/(b-a),0,1);}
+function fitTemp(p,s){const c=screenWorld(s,.5,.5).p;aimAt(p,c);const q=prep().find(x=>x.p===p);const dist=lensPos(p).distanceTo(c);const tr=dist/Math.max(chordOf(s)/(q.Wc/q.W1),chordHOf(s)/(q.Hc/q.W1));const [a,b]=lensRange(p);p.zoom=clamp((tr-a)/(b-a),0,1);}
 
 /* ============================== SAVE / LOAD ============================== */
 let saveT=null;
@@ -1786,7 +2065,7 @@ $('#viewMode').addEventListener('change',e=>setView(e.target.value));
 document.querySelectorAll('#dispSeg button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
 $('#lumUnit').addEventListener('change',e=>{S.lumUnit=e.target.value;dirty.color=true;save();render();});
 function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(S.dist||'off')?'true':'false'));}
-function afterLoad(){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
+function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
   syncHeader();dirty.surf=dirty.objs=dirty.compute=true;setCam('orbit');save();render();}
 
 function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&MODELFILE.name===S.model.name&&RAWMODEL){rebuildModel();return;}
@@ -1794,7 +2073,7 @@ function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&
 /* ============================== BOOT ============================== */
 loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];}else{preset('gallery');}
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
-resize();syncHeader();buildSurfaces();buildObjects();compute();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
+resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
 loop();
 })();
 </script>

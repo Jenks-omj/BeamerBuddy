@@ -2,11 +2,15 @@
 
 A browser-based 3D planner for projection in galleries, theatres and outdoor sites.
 
-- Christie and Barco projector and lens catalog, plus your own custom projectors and lenses
+- Christie, Barco and BenQ projector and lens catalog (including BenQ short throw, ultra short throw and portable
+  models with their built-in lens offsets), plus your own custom projectors and lenses
 - Throw distance, zoom fitting, lens shift and content aspect
-- Flat and curved screens (up to full 360°), risers, rear-projection screens
+- Flat and curved screens: curved left to right (up to full 360°), top to bottom, or both ways as a dish;
+  risers, rear-projection screens
 - Indoor gallery, theatre (proscenium, stage, apron, raked house, balcony), outdoor sloped site, or an imported SketchUp export (.dae / .obj / .stl / .glb)
 - Brightness heatmaps in nits, foot-lamberts or lux, image-edge coverage view, blend overlap
+- Content preview: give each projector a JPG and see it projected on every surface, with falloff, overlap and
+  shadows (images are kept in the browser, not in the plan code)
 - Shadow checks for audience members, performers and instruments
 - Floor-plan dimensions, like a drafting top view: distance square to each screen face, to the surrounding walls
   (not outdoors), and height above the floor. Projector measurements are taken from the center of the projector body
