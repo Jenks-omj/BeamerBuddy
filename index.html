@@ -1322,6 +1322,7 @@ function renderVenue(){
   g3.append(fld('Lumen derate %',num(S,'derate',{kind:'n',step:1,min:10,max:120}),{}),fld('Uniformity %',num(S,'uniformity',{kind:'n',step:1,min:50,max:100})));
   g3.append(fld(`Target (nits)`,num(S,'target',{kind:'n',step:5,min:1,max:5000,after:()=>drawLegend()}),{ro:'targetfl'}),fld('Resolution',sel(S,'quality',[['fine','Fine (slower)'],['draft','Draft (faster)']],{on:'surf'})));
   s3.append(g3);
+  s3.append(el('p','note',`Lumen derate scales every projector’s spec-sheet lumens before any brightness is calculated (${S.derate}% now), because installed projectors rarely reach their rated output once lamps or lasers age and colour is calibrated. 100% uses the raw spec figures.`));
   s3.append(el('p','note','Derate covers calibration, colour correction and laser/lamp ageing (80–85% is a common planning figure). Uniformity models the corner fall-off of the lens. Typical targets: 48 nits (14 fL) cinema in blackout, 80–150 nits gallery art, 200–400+ nits outdoors with ambient light.'));
   panel.append(s3);
 }
@@ -1429,6 +1430,7 @@ function renderProj(){
   r.append(btn('Aim at target',()=>{fitProj(p,'aim');}),btn('Zoom to fill',()=>{fitProj(p,'fill');}),btn('Zoom to fit inside',()=>{fitProj(p,'fit');}),btn('Move to fill distance',()=>{fitProj(p,'move');}),btn('Place level for target',()=>{fitProj(p,'place');}));
   fit.append(r);
   const out=el('dl','readout');out.dataset.ro='pread';fit.append(out);
+  const lmn=el('p','note');lmn.dataset.ro='plm';fit.append(lmn);
   const w=el('ul','msgs');w.dataset.ro='pwarn';fit.append(w);
   const sug=el('div','sec');sug.dataset.ro='psug';fit.append(sug);
   sug.addEventListener('click',e=>{const b=e.target.closest('[data-use-model]');if(!b)return;p.model=b.dataset.useModel;p.lens=b.dataset.useLens;
@@ -1726,7 +1728,9 @@ function updateReadouts(){
     setRO('tr',`${q.tr.toFixed(2)}:1 (${q.a}–${q.b})`);
     const s=targetScreen(p);let fitTxt='';
     if(s){const kw=q.Wc/q.W1,kh=q.Hc/q.W1;const qf=Math.max(chordOf(s)/kw,chordHOf(s)/kh);fitTxt=`<dt>To fill ${esc(s.name)}</dt><dd>${fmtLen(q.a*qf)} – ${fmtLen(q.b*qf)} throw</dd>`;}
-    setRO('pread',`<dt>Throw distance</dt><dd>${fmtLen(d)}</dd><dt>Image at throw</dt><dd>${d?fmtLen(q.Wc*d)+' × '+fmtLen(q.Hc*d):'—'}</dd><dt>Image diagonal</dt><dd>${d?fmtLen(Math.hypot(q.Wc,q.Hc)*d):'—'}</dd><dt>Lumens on content</dt><dd>${Math.round(q.lmContent).toLocaleString()} lm</dd><dt>Lands on</dt><dd>${st.tgt?esc(st.tgt.label):'nothing'}</dd><dt>Average on it</dt><dd>${st.tgt?fmtL(st.avg,st.tgt.gain):'—'}</dd><dt>Off-axis angle</dt><dd>${st.keystone!=null?st.keystone.toFixed(1)+'°':'—'}</dd>${fitTxt}`);
+    setRO('pread',`<dt>Throw distance</dt><dd>${fmtLen(d)}</dd><dt>Image at throw</dt><dd>${d?fmtLen(q.Wc*d)+' × '+fmtLen(q.Hc*d):'—'}</dd><dt>Image diagonal</dt><dd>${d?fmtLen(Math.hypot(q.Wc,q.Hc)*d):'—'}</dd><dt>Effective lumens</dt><dd>${Math.round(q.lm).toLocaleString()} lm</dd><dt>Lumens on content</dt><dd>${Math.round(q.lmContent).toLocaleString()} lm</dd><dt>Lands on</dt><dd>${st.tgt?esc(st.tgt.label):'nothing'}</dd><dt>Average on it</dt><dd>${st.tgt?fmtL(st.avg,st.tgt.gain):'—'}</dd><dt>Off-axis angle</dt><dd>${st.keystone!=null?st.keystone.toFixed(1)+'°':'—'}</dd>${fitTxt}`);
+    {const lf=q.lens.lm||1;const parts=[`× ${S.derate}% lumen derate (Venue → Light & planning) for ageing and real-world output`];if(lf!==1)parts.push(`× ${Math.round(lf*100)}% for this lens`);if(+p.out!==100)parts.push(`× ${p.out}% light output`);
+      setRO('plm',`Brightness is calculated from ${Math.round(q.lm).toLocaleString()} lm, not the ${(+q.m.lm).toLocaleString()} lm spec: ${parts.join(', ')}.`);}
     const ws=projWarnings(p).concat(stats.warn.filter(w=>w.t.includes(' '+p.name+' ')));setRO('pwarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));
     if(s)setRO('psug',lensSuggest(p,s));else setRO('psug','');
   }
