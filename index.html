@@ -64,6 +64,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px;min-height:
 .tag{position:absolute;transform:translate(-50%,-130%);font-family:var(--f-disp);font-weight:600;font-size:12px;letter-spacing:.05em;padding:1px 6px;border-radius:3px;background:var(--surface);border:1px solid var(--line);white-space:nowrap;color:var(--ink)}
 .tag b{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 .tag.dtag{transform:translate(-50%,-50%);font-family:var(--f-mono);font-weight:400;font-size:10.5px;letter-spacing:0;padding:1px 5px;opacity:.94}
+.tag.dtag.dh{transform:translate(12px,-50%)}
 .dtag i{font-style:normal;margin-right:6px}.dtag .x{color:var(--ax-x)}.dtag .y{color:var(--ax-y)}.dtag .z{color:var(--ax-z)}.dtag .d{color:var(--muted)}
 .hud{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;max-width:calc(100% - 20px)}
 .chip{font-family:var(--f-mono);font-size:11px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:2px 7px;color:var(--muted);width:max-content;max-width:100%}
@@ -174,13 +175,13 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
   <main>
     <section id="view" aria-label="3D venue">
       <div id="labels"></div>
-      <div class="hud"><div class="chip" id="hint">Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster</div><div class="chip" id="perf"></div></div>
+      <div class="hud"><div class="chip" id="hint">Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster</div><div class="chip" id="perf"></div><div class="chip" id="dimnote" hidden>Floor-plan dimensions and height above the floor. All projector measurements are taken from the center of the projector body.</div></div>
       <div class="viewbtns">
         <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
         <button class="btn sm" id="beamBtn" aria-pressed="true">Beams</button>
         <div class="brk"></div>
-        <div class="seg" id="distSeg" role="group" aria-label="Distances" title="X / Y (height) / Z distances. Selected: from the selected object to everything else. All: between every projector, screen and riser."><button data-v="off">Dist off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
+        <div class="seg" id="distSeg" role="group" aria-label="Distances" title="Floor-plan dimensions, like a drafting top view: distance square to each screen face, to the walls around the object, and height above the floor. Projectors measure from the center of the body. Selected: everything for the selected object. All: height and screen distances for every projector, screen and riser."><button data-v="off">Dims off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
       </div>
       <div id="legend"></div>
     </section>
@@ -778,8 +779,8 @@ function buildOccluders(){
 function buildObjects(){
   disposeGroup(G.objs);pickables=pickables.filter(m=>m.userData.surfKey);
   for(const p of S.projectors){
-    const m=modelOf(p);const big=m.lm>=20000;const g=new THREE.Group();
-    const bw=big?.75:.5,bh=big?.42:.22,bd=big?1.0:.55;
+    const g=new THREE.Group();
+    const [bw,bh,bd]=projBody(p);
     const body=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,bd),new THREE.MeshLambertMaterial({color:new THREE.Color(p.color),transparent:!p.on,opacity:p.on?1:.35}));
     body.position.set(0,0,bd/2);g.add(body);
     const lensM=new THREE.Mesh(new THREE.CylinderGeometry(bh*.33,bh*.38,.12,20),new THREE.MeshLambertMaterial({color:0x222222}));lensM.rotation.x=PI/2;lensM.position.set(0,0,-.05);g.add(lensM);
@@ -1170,7 +1171,10 @@ function renderProj(){
   const out=el('dl','readout');out.dataset.ro='pread';fit.append(out);
   const w=el('ul','msgs');w.dataset.ro='pwarn';fit.append(w);
   const sug=el('div','sec');sug.dataset.ro='psug';fit.append(sug);
-  panel.append(e,pos,fit);
+  const dm=sec('Dimensions');
+  dm.append(el('p','note','All measurements are taken from the center of the projector body. Distances run along the floor plan: square to each screen face, and straight to the walls. Left and right of a screen centre are as seen facing the screen. Height is above the floor, not the stage deck.'));
+  const dro=el('dl','readout');dro.dataset.ro='pdim';dm.append(dro);
+  panel.append(e,pos,fit,dm);
 }
 function targetScreen(p){if(p.target!=='auto'){const s=S.screens.find(s=>s.id===p.target);if(s)return s;}const st=stats.proj[p.id];if(st&&st.tgt&&st.tgt.kind==='screen')return st.tgt.ref;return S.screens[0]||null;}
 function fitProj(p,mode){
@@ -1404,6 +1408,7 @@ function updateReadouts(){
   setRO('grade',`${(slope()*100).toFixed(1)}% · ${(Math.atan(slope())/D2R).toFixed(1)}°`);
   setRO('targetfl',`${(S.target/NITS_PER_FL).toFixed(1)} fL`);
   const p=S.sel&&S.sel.kind==='proj'&&S.projectors.find(x=>x.id===S.sel.id);
+  if(p)setRO('pdim',dimsFor({id:p.id,pos:projCenter(p)},true).map(d=>`<dt>${esc(d.row[0])}</dt><dd>${d.row[1]}</dd>`).join(''));
   if(p&&stats.proj[p.id]){const st=stats.proj[p.id],q=st.q;const d=st.dist;
     setRO('tr',`${q.tr.toFixed(2)}:1 (${q.a}–${q.b})`);
     const s=targetScreen(p);let fitTxt='';
@@ -1464,27 +1469,57 @@ const endDrag=()=>{if(!drag)return;const was=drag;drag=null;controls.enabled=cam
 renderer.domElement.addEventListener('pointerup',endDrag);renderer.domElement.addEventListener('pointercancel',endDrag);
 $('#beamBtn').addEventListener('click',()=>{S.beams=!S.beams;$('#beamBtn').setAttribute('aria-pressed',S.beams);dirty.compute=true;save();});
 
-/* ---------- distances: X / Y (height) / Z between object reference points ---------- */
-/* reference points: projector = lens, screen = centre, riser = top centre, person = feet */
-function distPoints(){const out=[];
-  S.projectors.forEach(p=>out.push({id:p.id,t:p.name,pos:lensPos(p)}));
-  S.screens.forEach(s=>out.push({id:s.id,t:s.name,pos:screenWorld(s,.5,.5).p}));
+/* ---------- dimensions: floor-plan distances (square to screen faces, to walls) and height above the floor ---------- */
+/* reference points: projector = centre of the body, screen = centre of its bottom edge, riser = top centre, person = feet */
+function projBody(p){return modelOf(p).lm>=20000?[.75,.42,1.0]:[.5,.22,.55];}
+function projCenter(p){return lensPos(p).addScaledVector(projBasis(p).f,-projBody(p)[2]/2);}
+/* the venue floor under a point: stage decks and risers are ignored */
+function floorY(x,z){if(S.mode==='theatre'){const g=thG();return Math.max(0,z-g.zA)*g.rake;}return S.mode==='indoor'?0:groundY(x,z);}
+function dimPoints(){const out=[];
+  S.projectors.forEach(p=>out.push({id:p.id,t:p.name,pos:projCenter(p)}));
+  S.screens.forEach(s=>out.push({id:s.id,t:s.name,pos:screenWorld(s,.5,0).p,scr:s}));
   (S.risers||[]).forEach(r=>out.push({id:r.id,t:r.name,pos:V(r.x,groundY(r.x,r.z)+r.h,r.z)}));
   S.people.forEach((h,i)=>out.push({id:h.id,t:personLabel(h,i),pos:V(h.x,personBase(h),h.z),ppl:true}));return out;}
-function distPairs(){const m=S.dist||'off';if(m==='off'||camMode==='pov')return [];const pts=distPoints();
-  if(m==='sel'){const a=S.sel&&pts.find(o=>o.id===S.sel.id);return a?pts.filter(o=>o!==a).map(b=>[a,b]):[];}
-  const q=pts.filter(o=>!o.ppl),out=[];for(let i=0;i<q.length;i++)for(let j=i+1;j<q.length;j++)out.push([q[i],q[j]]);return out;}
+/* plan view of a screen (bottom edge, tilt ignored): d = distance square to the face (+ in front), lat = offset from its centre line (+ right when facing it) */
+function toScreenPlan(s,x,z){const c=Math.cos(s.yaw*D2R),sn=Math.sin(s.yaw*D2R),dx=x-s.x,dz=z-s.z;const lx=dx*c-dz*sn,lz=dx*sn+dz*c;
+  let ux=lx,uz=0,nx=0,nz=1,edge=false;
+  if(s.type==='curved'){const R=Math.max(s.R,.1),A=arcOf(s),cv=s.convex?-1:1;let th=Math.atan2(lx,cv*(cv*R-lz));
+    if(Math.abs(th)>A/2){th=clamp(th,-A/2,A/2);edge=true;}const l=screenLocal(s,th/A+.5,0);ux=l.p[0];uz=l.p[2];nx=l.n[0];nz=l.n[2];}
+  const ex=lx-ux,ez=lz-uz,dn=ex*nx+ez*nz;const d=edge?Math.hypot(ex,ez)*(dn<0?-1:1):dn;
+  return {d,lat:lx,edge,foot:[s.x+ux*c+uz*sn,s.z-ux*sn+uz*c]};}
+/* walls around a plan point as [name, axis, coordinate]; outdoor sites have none */
+function wallsAt(x,z,y){
+  if(S.mode==='indoor'){const {W,L}=S.room;return [['Left wall','x',0],['Right wall','x',W],['Front wall','z',0],['Back wall','z',L]];}
+  if(S.mode==='theatre'){const g=thG(),t=g.t;
+    if(z<g.zP)return [['Stage left wall','x',g.cx-t.stageW/2],['Stage right wall','x',g.cx+t.stageW/2],['Upstage wall','z',0],['Proscenium','z',g.zP]];
+    return [['House left wall','x',g.cx-t.houseW/2],['House right wall','x',g.cx+t.houseW/2],['Proscenium','z',g.zP],['House back wall','z',g.L]];}
+  if(S.mode==='model'&&BVH){const out=[];
+    [['−X wall','x',-1,0],['+X wall','x',1,0],['−Z wall','z',0,-1],['+Z wall','z',0,1]].forEach(([t,ax,dx,dz])=>{const d=V(dx,0,dz);
+      const h=bvhRay(V(x,y,z),d,500)||bvhRay(V(x,floorY(x,z)+1.2,z),d,500);if(h)out.push([t,ax,ax==='x'?h.point.x:h.point.z]);});return out;}
+  return [];}
+/* every dimension for one object: lines (a→b, optional leg), a tag for the 3D view and a row for the side panel */
+function dimsFor(A,walls){const out=[],{x,z}=A.pos,f=floorY(x,z),at=(px,pz)=>V(px,floorY(px,pz),pz);
+  out.push({k:'y',a:V(x,f,z),b:A.pos.clone(),tag:`<i class="y">${A.scr?'Bottom edge':'Height'} ${fmtLen(A.pos.y-f)}</i>`,row:[A.scr?'Bottom edge above floor':'Height above floor',fmtLen(A.pos.y-f)]});
+  if(walls)wallsAt(x,z,A.pos.y).forEach(([t,ax,v])=>{const b=ax==='x'?at(v,z):at(x,v);const m=Math.abs(ax==='x'?v-x:v-z);
+    out.push({k:ax,a:at(x,z),b,tag:`<i class="d">${esc(t)}</i>${fmtLen(m)}`,row:['To '+t,fmtLen(m)]});});
+  S.screens.forEach(s=>{if(A.scr===s)return;const r=toScreenPlan(s,x,z),side=Math.abs(r.lat)<.0005?'on':r.lat<0?'left of':'right of';
+    const perp=`${fmtLen(Math.abs(r.d))}${r.d<0?' behind':''}${r.edge?' to its end':''}`;
+    out.push({k:'s',a:at(x,z),b:at(...r.foot),leg:s.type==='curved'?null:[at(...r.foot),at(s.x,s.z)],
+      tag:`<i class="d">${esc(s.name)}</i><i class="z">⟂ ${perp}</i><i class="x">${side==='on'?'on centre':fmtLen(Math.abs(r.lat))+' '+(side==='left of'?'L':'R')}</i>`,
+      row:[`To ${s.name} (square to face)`,`${perp} · ${side==='on'?'on centre line':fmtLen(Math.abs(r.lat))+' '+side+' centre'}`]});});
+  return out;}
+function distPairs(){const m=S.dist||'off';if(m==='off'||camMode==='pov')return [];const pts=dimPoints();
+  if(m==='sel'){const a=S.sel&&pts.find(o=>o.id===S.sel.id);return a?dimsFor(a,true).map(d=>({...d,id:a.id})):[];}
+  return pts.filter(o=>!o.ppl).flatMap(a=>dimsFor(a,false).map(d=>({...d,id:a.id})));}
 const distLines=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.9}));
 distLines.renderOrder=10;distLines.frustumCulled=false;scene.add(distLines);
 let distLast=[];
-function updateDistances(){const pairs=distPairs();distLast=pairs;const P=[],C=[];
-  const cx=TC['--ax-x'],cy=TC['--ax-y'],cz=TC['--ax-z'],cd=TC['--accent'];
+function updateDistances(){const dims=distPairs();distLast=dims;const P=[],C=[];
+  const col={x:TC['--ax-x'],y:TC['--ax-y'],z:TC['--ax-z'],s:TC['--accent']};
   const seg=(a,b,c)=>{P.push(a.x,a.y,a.z,b.x,b.y,b.z);C.push(c.r,c.g,c.b,c.r,c.g,c.b);};
-  const legs=S.dist==='sel';
-  pairs.forEach(([A,B])=>{const a=A.pos,b=B.pos;seg(a,b,cd);
-    if(legs){const k1=V(b.x,a.y,a.z),k2=V(b.x,a.y,b.z);seg(a,k1,cx);seg(k1,k2,cz);seg(k2,b,cy);}});
-  distLines.geometry.dispose();const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));distLines.geometry=g;distLines.visible=P.length>0;}
-const sgnLen=m=>(m<-.0005?'−':'+')+Math.abs(toD(m)).toFixed(2);
+  dims.forEach(d=>{seg(d.a,d.b,col[d.k]);if(d.leg)seg(d.leg[0],d.leg[1],TC['--edge']);});
+  distLines.geometry.dispose();const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));distLines.geometry=g;distLines.visible=P.length>0;
+  $('#dimnote').hidden=!(S.dist&&S.dist!=='off'&&camMode!=='pov');}
 function setDist(v){S.dist=v;document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v?'true':'false'));
   if(v==='sel'&&!S.sel)toast('Select an object to measure from it');save();}
 document.querySelectorAll('#distSeg button').forEach(b=>b.addEventListener('click',()=>setDist(b.dataset.v)));
@@ -1493,11 +1528,9 @@ document.querySelectorAll('#distSeg button').forEach(b=>b.addEventListener('clic
 function updateLabels(){
   const items=[];S.projectors.forEach(p=>items.push({id:p.id,t:p.name,c:p.color,pos:lensPos(p).add(V(0,.45,0))}));
   S.screens.forEach(s=>items.push({id:s.id,t:s.name,c:null,pos:screenWorld(s,.5,1).p.add(V(0,.25,0))}));
-  distLast.forEach(([A,B])=>{const a=A.pos,b=B.pos,dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z;
-    items.push({id:'d:'+A.id+':'+B.id,dist:true,pos:a.clone().lerp(b,.5),
-      h:(S.dist==='all'?`<i class="d">${esc(A.t)}–${esc(B.t)}</i>`:`<i class="d">→ ${esc(B.t)}</i>`)+`<i class="x">X ${sgnLen(dx)}</i><i class="y">Y ${sgnLen(dy)}</i><i class="z">Z ${sgnLen(dz)}</i>${fmtLen(a.distanceTo(b))}`});});
+  distLast.forEach((d,i)=>items.push({id:'d:'+d.id+':'+i,dist:true,dh:d.k==='y',pos:d.k==='y'?d.b:d.a.clone().lerp(d.b,d.k==='s'?.62:.38),h:d.tag}));
   const r=renderer.domElement.getBoundingClientRect();const seen=new Set();
-  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',it.dist?'tag dtag':'tag');d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);
+  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',it.dist?'tag dtag':'tag');d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',it.dh);
     const html=it.h||(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;}
     const v=it.pos.clone().project(camera);const vis=v.z<1&&v.z>-1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1&&camMode!=='pov';d.hidden=!vis;if(vis){d.style.left=((v.x+1)/2*r.width)+'px';d.style.top=((1-v.y)/2*r.height)+'px';}});
   labelsEl.querySelectorAll('.tag').forEach(d=>{if(!seen.has(d.dataset.id))d.remove();});
