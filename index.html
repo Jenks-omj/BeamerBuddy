@@ -636,7 +636,7 @@ function newPerson(over={}){return Object.assign({id:uid('h'),type:'standing',x:
 function newRiser(over={}){return Object.assign({id:uid('r'),name:'Riser '+((S&&S.risers?S.risers.length:0)+1),w:2.44,d:1.22,h:.4,x:siteDims().W/2,z:2.5,yaw:0,gain:.08},over);}
 function thDefaults(){return {stageW:18,stageD:11,stageH:1.0,flyH:16,apron:1.8,apronW:14,proW:13,proH:7.5,houseW:20,houseL:24,houseH:11,rise:1,run:12,
   seatW:15,seatD:15,seatFront:2.5,rowPitch:.95,seatPitch:.55,bal:true,balH:5.5,balD:7,balRows:5,wallGain:.12,stageGain:.08,cycGain:.8};}
-function baseState(){return {name:'Untitled plan',units:'m',mode:'indoor',room:{L:14,W:10,H:4.5,wallGain:.85,floorGain:.3,ceilGain:.8,walls:true,floor:true,ceil:true},
+function baseState(){return {name:'Untitled plan',units:'ft',mode:'indoor',room:{L:14,W:10,H:4.5,wallGain:.85,floorGain:.3,ceilGain:.8,walls:true,floor:true,ceil:true},
   site:{L:70,W:60,rise:1,run:12,dir:0,gain:.18},th:thDefaults(),model:modelDefaults(),ambient:1,derate:85,uniformity:90,target:100,quality:'fine',beams:true,dist:'off',view:'lum',lumUnit:'nits',
   projectors:[],screens:[],people:[],risers:[],sel:null};}
 
@@ -2108,6 +2108,7 @@ function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&
   idbGet().then(v=>{if(v&&v.name===S.model.name){loadModelData(v.name,v.ext,v.data,false);}else{MODELMSG=`Import ${S.model.name} again to see the model on this device.`;render();}}).catch(()=>{MODELMSG='This browser blocked storage. Import the model file again.';render();});}
 /* ============================== BOOT ============================== */
 loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];}else{preset('gallery');}
+S.units='ft';/* the app always opens in feet; the m / ft switch still changes it for the session */
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
 resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
 loop();
