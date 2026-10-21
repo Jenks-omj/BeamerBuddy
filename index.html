@@ -1485,7 +1485,11 @@ function renderScr(){
   const bd=bendOf(x);g.append(fld(bd==='h'||bd==='both'?'Width (along arc)':'Width',num(x,'w',{min:.1,max:2000,on:'surf',after:()=>{syncH();hIn.value=+toD(x.h).toFixed(3);}})),fld(bd==='v'||bd==='both'?'Height (along arc)':'Height',hIn));
   g.append(fld('Aspect ratio',sel(x,'aspect',ASPECTS,{on:'surf',after:()=>{syncH();render();}})),fld('Screen gain',num(x,'gain',{kind:'n',step:.05,min:.05,max:5,on:'surf'})));
   if(x.type==='curved'){if(!x.bend)x.bend='h';g.append(fld('Curves',sel(x,'bend',[['h','Left to right'],['v','Top to bottom'],['both','Both ways (dish)']],{on:'surf',after:()=>render()})),fld('Radius',num(x,'R',{min:.3,max:500,on:'surf'}),{ro:'arc'}),fld('Curve',sel(x,'convex',[['false','Concave (wraps viewer)'],['true','Convex (bulges out)']],{on:'surf',after:()=>{x.convex=x.convex==='true'||x.convex===true;}})));
-    if(bd!=='v'){const full=btn('Make full 360°',()=>{x.w=+(2*PI*x.R).toFixed(3);x.aspect='custom';changed('surf');render();});const fw=el('div','fld wide');fw.append(full);g.append(fw);}}
+    if(bd!=='v'){/* toggle: going full remembers the width and aspect so switching back restores them */
+      const isFull=x.w>=2*PI*x.R-1e-3;const full=btn(isFull?'Full 360° (click to undo)':'Make full 360°',()=>{
+        if(isFull){x.w=x.prevW&&x.prevW<2*PI*x.R-1e-3?x.prevW:+(PI*x.R/2).toFixed(3);x.aspect=x.prevAspect||'custom';delete x.prevW;delete x.prevAspect;}
+        else{x.prevW=x.w;x.prevAspect=x.aspect;x.w=+(2*PI*x.R).toFixed(3);x.aspect='custom';}
+        changed('surf');render();});full.setAttribute('aria-pressed',isFull?'true':'false');const fw=el('div','fld wide');fw.append(full);g.append(fw);}}
   e.append(g);
   const pos=sec('Placement');const g2=el('div','grid3');
   g2.append(fld('X (centre)',num(x,'x',{min:-500,max:1500,on:'surf'})),fld('Z',num(x,'z',{min:-500,max:1500,on:'surf'})),fld('Bottom above ground',num(x,'elev',{min:-10,max:200,on:'surf'})));
