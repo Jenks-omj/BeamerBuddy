@@ -1,5 +1,7 @@
 # BeamerBuddy
 
+<p align="center"><a href="https://jenks-omj.github.io/BeamerBuddy/"><img src="assets/launch-banner.svg" alt="BeamerBuddy: click to launch" width="820"></a></p>
+
 A browser-based 3D planner for projection in galleries, theatres and outdoor sites.
 
 - Christie, Barco and BenQ projector and lens catalog (including BenQ short throw, ultra short throw and portable
@@ -21,8 +23,10 @@ A browser-based 3D planner for projection in galleries, theatres and outdoor sit
 
 ## Running it
 
-It is a single file. Open `index.html` in a modern browser, or publish the repository with GitHub Pages
-(Settings → Pages → deploy from branch `main`, folder `/root`).
+The live version is at **https://jenks-omj.github.io/BeamerBuddy/** (the banner above links there). GitHub Pages
+rebuilds it from `main` on every push, so the link always opens the latest version.
+
+It is a single file, so you can also open `index.html` straight from a copy of the repository in a modern browser.
 
 An internet connection is needed: three.js and fonts load from public CDNs.
 
