@@ -2098,7 +2098,9 @@ function selectGuide(id){guideSel=id;buildGuides();if(tab==='venue')render();}
 function deleteGuide(id){const g=S.guides.find(x=>x.id===id);if(!g)return;S.guides=S.guides.filter(x=>x!==g);if(guideSel===id)guideSel=null;changed('obj');render();toast(`Deleted ${g.name}`);}
 labelsEl.addEventListener('pointerdown',e=>{const t=e.target.closest('.gtag');if(!t)return;e.stopPropagation();e.preventDefault();
   const del=e.target.closest('[data-gdel]');if(del){deleteGuide(del.dataset.gdel);return;}selectGuide(t.dataset.id.slice(2));});
-function addGuide(run,over){const g=newGuide(run,over);S.guides.push(g);guideSel=g.id;changed('obj');if(tab!=='venue')setTab('venue');else render();return g;}
+function sameGuide(a,b){return a.run===b.run&&(a.run==='x'||Math.abs(a.x-b.x)<.005)&&(a.run==='z'||Math.abs(a.z-b.z)<.005)&&(a.run==='y'||(!!a.floor===!!b.floor&&(a.floor||Math.abs(a.y-b.y)<.005)));}
+function addGuide(run,over){const g=newGuide(run,over);const dup=S.guides.find(x=>sameGuide(x,g));
+  if(dup){guideSel=dup.id;buildGuides();toast(`${dup.name} is already there`);if(tab!=='venue')setTab('venue');else render();return dup;}S.guides.push(g);guideSel=g.id;changed('obj');if(tab!=='venue')setTab('venue');else render();return g;}
 
 /* ---------- tape-measure tool: click a wall / screen / floor, drag away from it, release (or click again) to drop a guide ---------- */
 const GUIDE_HINT='Guide tool: drag out guides from a wall, screen or the floor (keys below)';
@@ -2170,7 +2172,7 @@ function renderGuides(){const w=wallNames();
   if(!S.guides.length)list.append(el('p','note','No guides yet.'));
   s.append(list,chk(S,'snap','Snap dragged objects to guides',{on:'none'}));panel.append(s);
   const g=S.guides.find(x=>x.id===guideSel);if(!g)return;
-  const e=sec(g.name,[btn('Duplicate',()=>{const c={...g,id:uid('g'),name:g.name+' copy'};S.guides.push(c);guideSel=c.id;changed('obj');render();}),
+  const e=sec(g.name,[btn('Duplicate',()=>{const c={...g,id:uid('g'),name:g.name+' copy'};if(g.run==='x')c.z=+(g.z+.5).toFixed(4);else c.x=+(g.x+.5).toFixed(4);S.guides.push(c);guideSel=c.id;changed('obj');render();}),
     btn('Delete',()=>{S.guides=S.guides.filter(x=>x!==g);guideSel=null;changed('obj');render();},'btn sm danger')]);
   const gr=el('div','grid2');
   const nm=el('input');nm.type='text';nm.id='f-'+g.id+'-name';nm.value=g.name;nm.addEventListener('input',()=>{g.name=nm.value;changed();});
@@ -2191,10 +2193,20 @@ function updateLabels(){
   S.screens.forEach(s=>items.push({id:s.id,t:s.name,c:null,pos:screenWorld(s,.5,1).p.add(V(0,.25,0))}));
   guideLabels(items);
   distLast.forEach((d,i)=>items.push({id:'d:'+d.id+':'+i,dist:true,dh:d.k==='y',pos:d.k==='y'?d.b:d.a.clone().lerp(d.b,d.k==='s'?.62:.38),h:d.tag}));
-  const r=renderer.domElement.getBoundingClientRect();const seen=new Set();
+  const r=renderer.domElement.getBoundingClientRect();const seen=new Set(),placed=[];
+  /* guide labels go last and step aside from labels already placed, so crossing guides never print on top of each other */
+  items.sort((a,b)=>(a.cls==='gtag')-(b.cls==='gtag'));
   items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',(it.dist?'tag dtag':'tag')+(it.cls?' '+it.cls:''));d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',it.dh);if(it.cls)d.classList.toggle('sel',!!it.sel);
-    const html=it.h||(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;}
-    const v=it.pos.clone().project(camera);const vis=v.z<1&&v.z>-1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1&&camMode!=='pov';d.hidden=!vis;if(vis){d.style.left=((v.x+1)/2*r.width)+'px';d.style.top=((1-v.y)/2*r.height)+'px';}});
+    const html=it.h||(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;d._bw=0;}
+    const v=it.pos.clone().project(camera);const vis=v.z<1&&v.z>-1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1&&camMode!=='pov';if(d.hidden!==!vis)d.hidden=!vis;if(!vis)return;
+    /* whole pixels only: sub-pixel creep while the camera settles makes text shimmer */
+    let x=Math.round((v.x+1)/2*r.width),y=Math.round((1-v.y)/2*r.height);
+    if(!d._bw){d._bw=d.offsetWidth;d._bh=d.offsetHeight;}const w=d._bw,h=d._bh;
+    const box=yy=>it.dist?(it.dh?[x+12,yy-h/2,w,h]:[x-w/2,yy-h/2,w,h]):[x-w/2,yy-1.3*h,w,h];
+    const hits=b=>placed.some(q=>b[0]<q[0]+q[2]&&q[0]<b[0]+b[2]&&b[1]<q[1]+q[3]&&q[1]<b[1]+b[3]);
+    if(it.cls==='gtag'&&hits(box(y)))for(const k of [1,-1,2,-2,3,-3,4,-4]){const yy=y+k*(h+3);if(!hits(box(yy))){y=yy;break;}}
+    placed.push(box(y));
+    if(d._x!==x){d.style.left=x+'px';d._x=x;}if(d._y!==y){d.style.top=y+'px';d._y=y;}});
   labelsEl.querySelectorAll('.tag').forEach(d=>{if(!seen.has(d.dataset.id))d.remove();});
 }
 
@@ -2459,13 +2471,13 @@ $('#viewMode').addEventListener('change',e=>setView(e.target.value));
 document.querySelectorAll('#dispSeg button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
 $('#lumUnit').addEventListener('change',e=>{S.lumUnit=e.target.value;dirty.color=true;save();render();});
 function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(S.dist||'off')?'true':'false'));}
-function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});if(S.snap==null)S.snap=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
+function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
   syncHeader();dirty.surf=dirty.objs=dirty.compute=true;setCam('orbit');save();render();}
 
 function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&MODELFILE.name===S.model.name&&RAWMODEL){rebuildModel();return;}
   idbGet().then(v=>{if(v&&v.name===S.model.name){loadModelData(v.name,v.ext,v.data,false);}else{MODELMSG=`Import ${S.model.name} again to see the model on this device.`;render();}}).catch(()=>{MODELMSG='This browser blocked storage. Import the model file again.';render();});}
 /* ============================== BOOT ============================== */
-loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});if(S.snap==null)S.snap=true;}else{preset('gallery');}
+loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;}else{preset('gallery');}
 S.units='ft';/* the app always opens in feet; the m / ft switch still changes it for the session */
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
 resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
