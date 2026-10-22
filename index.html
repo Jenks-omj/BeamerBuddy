@@ -182,6 +182,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button><button data-v="content">Content</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
         <button class="btn sm" id="beamBtn" aria-pressed="true">Beams</button>
+        <button class="btn sm" id="fastBtn" aria-pressed="true" title="While the camera moves: render at lower resolution and hide beams, image-edge outlines, model edges, dimensions and labels. Full detail returns when the camera stops.">Fast orbit</button>
         <div class="brk"></div>
         <div class="seg" id="distSeg" role="group" aria-label="Distances" title="Floor-plan dimensions, like a drafting top view: distance square to each screen face, to the walls around the object, and height above the floor. Projectors measure from the center of the body. Selected: everything for the selected object. All: height and screen distances for every projector, screen and riser."><button data-v="off">Dims off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
       </div>
@@ -1281,6 +1282,7 @@ function num(obj,key,{kind='len',step,min,max,id,on='obj',after}={}){
   const toV=v=>kind==='len'?+toD(v).toFixed(3):v;const fromV=v=>kind==='len'?fromD(v):v;
   i.value=toV(obj[key]);i.step=step!=null?step:(kind==='len'?(S.units==='ft'?.5:.1):1);if(min!=null)i.min=kind==='len'?toD(min):min;if(max!=null)i.max=kind==='len'?toD(max):max;
   i.addEventListener('input',()=>{const v=parseFloat(i.value);if(!isFinite(v))return;let mv=fromV(v);if(min!=null)mv=Math.max(min,mv);if(max!=null)mv=Math.min(max,mv);obj[key]=mv;after&&after();changed(on);});
+  i.addEventListener('change',()=>{i.value=toV(obj[key]);});/* show the clamped value once editing ends */
   return i;
 }
 function sel(obj,key,options,{id,on='obj',after}={}){const s=el('select');s.id=id||('f-'+(obj.id||'g')+'-'+key);
@@ -1413,8 +1415,11 @@ function renderProj(){
   g2.append(fld('X',num(p,'x',{min:-500,max:1500})),fld('Z',num(p,'z',{min:-500,max:1500})),fld('Height above ground',num(p,'h',{min:-5,max:100})));
   if(S.mode==='theatre'&&S.th.bal)g2.append(fld('Level',sel(p,'lvl',[['floor','House floor / stage'],['balcony','Balcony']],{on:'obj'})));
   g2.append(fld('Yaw °',num(p,'yaw',{kind:'n',step:.5,min:-360,max:360})),fld('Pitch °',num(p,'pitch',{kind:'n',step:.5,min:-90,max:90})),fld('Roll °',num(p,'roll',{kind:'n',step:.5,min:-180,max:180})));
-  const ss=shiftSpec(m,lens),shV=num(p,'shiftV',{kind:'n',step:1,min:-150,max:150}),shH=num(p,'shiftH',{kind:'n',step:1,min:-100,max:100});if(ss){shV.disabled=!!ss.fixed;shH.disabled=!ss.h;}
-  g2.append(fld('Lens shift V %',shV),fld('Lens shift H %',shH),fld('Light output %',num(p,'out',{kind:'n',step:1,min:1,max:100})));
+  /* shift is limited to the published range for this body and lens where we know it */
+  const ss=shiftSpec(m,lens),vr=ss?ss.v:[-150,150],hr=ss?ss.h:100;
+  const shV=num(p,'shiftV',{kind:'n',step:1,min:vr[0],max:vr[1]}),shH=num(p,'shiftH',{kind:'n',step:1,min:-hr,max:hr});if(ss){shV.disabled=!!ss.fixed;shH.disabled=!ss.h;}
+  const rng=ss?(ss.fixed?' (fixed)':` (${+vr[0].toFixed(1)} to ${+vr[1].toFixed(1)})`):'';
+  g2.append(fld('Lens shift V %'+rng,shV),fld('Lens shift H %'+(ss?(ss.h?` (±${ss.h})`:' (none)'):''),shH),fld('Light output %',num(p,'out',{kind:'n',step:1,min:1,max:100})));
   pos.append(g2);
   if(ss&&ss.fixed)pos.append(el('p','note',`Fixed lens offset${m.off!=null?` (${m.off}% projection offset)`:''}: the image centre sits ${ss.base}% of the image height above the lens axis (below it when hung upside down). There is no lens shift: “Place level for target” positions it the way it would be installed, while “Aim at target” tilts it instead (which adds keystone).`));
   else if(ss)pos.append(el('p','note',`Lens shift range: V ${ss.v[0]}% to ${ss.v[1]}%${ss.h?`, H ±${ss.h}%`:', no horizontal shift'}. V is where the image centre sits above the lens axis, in % of image height (0 = centred).`));
@@ -1782,6 +1787,9 @@ renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;setMouse(
   if(drag.pk.kind==='scr'||drag.pk.kind==='rsr'){dirty.surf=true;}dirty.objs=true;dirty.compute=true;});
 const endDrag=()=>{if(!drag)return;const was=drag;drag=null;controls.enabled=camMode==='orbit'||camMode==='top';draft=false;if(was.moved){changed(was.pk.kind==='scr'||was.pk.kind==='rsr'?'surf':'obj');render();}};
 renderer.domElement.addEventListener('pointerup',endDrag);renderer.domElement.addEventListener('pointercancel',endDrag);
+let fastCam=true;try{fastCam=localStorage.getItem('throwline:fastcam')!=='0';}catch(e){}
+$('#fastBtn').setAttribute('aria-pressed',fastCam);
+$('#fastBtn').addEventListener('click',()=>{fastCam=!fastCam;$('#fastBtn').setAttribute('aria-pressed',fastCam);try{localStorage.setItem('throwline:fastcam',fastCam?'1':'0');}catch(e){}});
 $('#beamBtn').addEventListener('click',()=>{S.beams=!S.beams;$('#beamBtn').setAttribute('aria-pressed',S.beams);dirty.compute=true;save();});
 
 /* ---------- dimensions: floor-plan distances (square to screen faces, to walls) and height above the floor ---------- */
@@ -1869,6 +1877,14 @@ function walk(dt){
   if(camMode==='person'&&personCam){personCam.eye.add(mv);personCam.look.add(mv);}
   else{camera.position.add(mv);controls.target.add(mv);}
 }
+/* ---------- fast orbit: drop the costly layers while the camera moves, restore once it has been still for a moment ---------- */
+const FULL_PR=Math.min(2,window.devicePixelRatio||1),lastCam=new THREE.Matrix4();let camMoving=false,camStill=0;
+function setLite(on){camMoving=on;renderer.setPixelRatio(on?Math.min(1,FULL_PR):FULL_PR);
+  G.beams.visible=G.outl.visible=!on;G.aux.children.forEach(o=>{if(o.userData.model)o.visible=!on;});if(on)distLines.visible=false;/* updateDistances restores it */labelsEl.hidden=on;}
+function trackCamera(now){camera.updateMatrixWorld();const moved=!lastCam.equals(camera.matrixWorld);lastCam.copy(camera.matrixWorld);
+  if(moved)camStill=now;
+  if(fastCam&&moved&&!camMoving&&!drag)setLite(true);
+  else if(camMoving&&(!fastCam||now-camStill>180))setLite(false);}
 function loop(){
   requestAnimationFrame(loop);
   const now=performance.now();walk(Math.min(.1,(now-lastT)/1000));lastT=now;
@@ -1877,8 +1893,8 @@ function loop(){
   if(dirty.objs){buildObjects();dirty.objs=false;dirty.compute=true;}
   if(dirty.compute){dirty.compute=false;dirty.color=false;compute();if(!drag)updateReadouts();else $('#perf').textContent=`dragging · ${stats.ms.toFixed(0)} ms`;}
   else if(dirty.color){dirty.color=false;paint();}
-  updatePOV();if(controls.enabled)controls.update();
-  updateDistances();renderer.render(scene,camera);updateLabels();
+  updatePOV();if(controls.enabled)controls.update();trackCamera(now);
+  if(camMoving)renderer.render(scene,camera);else{updateDistances();renderer.render(scene,camera);updateLabels();}
 }
 
 /* ============================== SKETCHUP EXPORT (COLLADA .dae, Z up, metres) ============================== */
