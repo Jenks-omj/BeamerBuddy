@@ -2196,7 +2196,7 @@ function updateLabels(){
   const r=renderer.domElement.getBoundingClientRect();const seen=new Set(),placed=[];
   /* guide labels go last and step aside from labels already placed, so crossing guides never print on top of each other */
   items.sort((a,b)=>(a.cls==='gtag')-(b.cls==='gtag'));
-  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',(it.dist?'tag dtag':'tag')+(it.cls?' '+it.cls:''));d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',it.dh);if(it.cls)d.classList.toggle('sel',!!it.sel);
+  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',(it.dist?'tag dtag':'tag')+(it.cls?' '+it.cls:''));d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',!!it.dh);/* !! matters: toggle(x, undefined) flips the class every frame */if(it.cls)d.classList.toggle('sel',!!it.sel);
     const html=it.h||(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;d._bw=0;}
     const v=it.pos.clone().project(camera);const vis=v.z<1&&v.z>-1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1&&camMode!=='pov';if(d.hidden!==!vis)d.hidden=!vis;if(!vis)return;
     /* whole pixels only: sub-pixel creep while the camera settles makes text shimmer */
