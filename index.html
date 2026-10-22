@@ -76,6 +76,18 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px;min-height:
 .swatches{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px}
 .swatches span{display:inline-flex;align-items:center;gap:5px}
 .swatches i{width:10px;height:10px;border-radius:2px;display:inline-block}
+#shiftAlert{position:absolute;left:50%;top:50px;transform:translateX(-50%);z-index:6;max-width:calc(100% - 20px);background:var(--warn);color:var(--bg);border-radius:6px;padding:7px 12px;font-size:13px;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.25);pointer-events:none}
+#shiftAlert.over{background:var(--bad)}
+#shiftAlert b{font-family:var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+#shiftAlert div+div{margin-top:3px}
+@media (prefers-reduced-motion:no-preference){#shiftAlert.flash{animation:shiftflash .45s ease-out}}
+@keyframes shiftflash{0%{transform:translateX(-50%) scale(1)}35%{transform:translateX(-50%) scale(1.07)}100%{transform:translateX(-50%) scale(1)}}
+.fld input.atmax{outline:2px solid var(--warn);outline-offset:0}
+.shiftmeter{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;align-items:center;font-size:12px}
+.shiftmeter:empty{display:none}
+.shiftmeter span{color:var(--muted)}.shiftmeter em{font-style:normal;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.shiftmeter i{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.shiftmeter i b{display:block;height:100%;background:var(--good)}.shiftmeter i b.warn{background:var(--warn)}.shiftmeter i b.bad{background:var(--bad)}
 .viewbtns{position:absolute;right:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .viewbtns .brk{flex-basis:100%;height:0}
 aside{display:flex;flex-direction:column;min-height:0;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
@@ -186,6 +198,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <div class="brk"></div>
         <div class="seg" id="distSeg" role="group" aria-label="Distances" title="Floor-plan dimensions, like a drafting top view: distance square to each screen face, to the walls around the object, and height above the floor. Projectors measure from the center of the body. Selected: everything for the selected object. All: height and screen distances for every projector, screen and riser."><button data-v="off">Dims off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
       </div>
+      <div id="shiftAlert" role="status" aria-live="polite" hidden></div>
       <div id="legend"></div>
     </section>
     <aside>
@@ -222,71 +235,115 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 /* ============================== CATALOG ============================== */
 /* Lens families. verified = throw ratios taken from a manufacturer or dealer spec listing (see src). */
 const FAM={
- CH4K:{name:'Christie 3DLP 4K HB/UHC lenses',src:'Christie Griffyn Series technical reference (020-103422-08)',verified:true,lenses:[
-  {id:'ch4k-038',name:'0.38:1 HB fixed (UST)',min:.38,max:.38,lm:.7,note:'Christie: up to 30% brightness loss'},
-  {id:'ch4k-072',name:'0.72:1 HB/UHC fixed',min:.72,max:.72},
-  {id:'ch4k-090',name:'0.9:1 HB/UHC fixed',min:.9,max:.9},
-  {id:'ch4k-113131',name:'1.13–1.31:1 HB zoom (legacy)',min:1.13,max:1.31},
-  {id:'ch4k-113166',name:'1.13–1.66:1 HB/UHC zoom',min:1.13,max:1.66},
-  {id:'ch4k-131163',name:'1.31–1.63:1 HB zoom (legacy)',min:1.31,max:1.63},
-  {id:'ch4k-145217',name:'1.45–2.17:1 HB/UHC zoom',min:1.45,max:2.17},
-  {id:'ch4k-163217',name:'1.63–2.17:1 HB zoom (legacy)',min:1.63,max:2.17},
-  {id:'ch4k-195326',name:'1.95–3.26:1 HB/UHC zoom',min:1.95,max:3.26,big:true},
-  {id:'ch4k-199271',name:'1.99–2.71:1 HB zoom (legacy)',min:1.99,max:2.71},
-  {id:'ch4k-271389',name:'2.71–3.89:1 HB/UHC zoom',min:2.71,max:3.89,big:true},
-  {id:'ch4k-389543',name:'3.89–5.43:1 HB/UHC zoom',min:3.89,max:5.43,big:true},
-  {id:'ch4k-498769',name:'4.98–7.69:1 HB zoom',min:4.98,max:7.69,big:true}]},
- CHILS:{name:'Christie ILS lenses (HS / M / Crimson)',src:'Christie HS Series 2K technical reference (020-103718-02); Crimson & 4K-HS fit is approximate',verified:true,lenses:[
-  {id:'ils-038',name:'0.38:1 fixed (UST)',min:.38,max:.38},
-  {id:'ils-065',name:'0.65–0.75:1 zoom',min:.65,max:.75},
-  {id:'ils-084',name:'0.84–1.02:1 zoom',min:.84,max:1.02},
-  {id:'ils-102',name:'1.02–1.36:1 zoom',min:1.02,max:1.36},
-  {id:'ils-120',name:'1.2–1.5:1 zoom',min:1.2,max:1.5},
-  {id:'ils-150',name:'1.5–2.0:1 zoom',min:1.5,max:2.0},
-  {id:'ils-200',name:'2.0–4.0:1 zoom',min:2.0,max:4.0},
-  {id:'ils-400',name:'4.0–7.2:1 zoom',min:4.0,max:7.2},
-  {id:'ils-720',name:'7.2–10.8:1 zoom',min:7.2,max:10.8}]},
- CHGS:{name:'Christie GS Series lenses',src:'Christie GS Series technical reference (020-103715-03)',verified:true,lenses:[
-  {id:'gs-036',name:'0.36:1 fixed (UST)',min:.36,max:.36},
-  {id:'gs-037',name:'0.37–0.4:1 UST 90° (table/ceiling)',min:.37,max:.40},
-  {id:'gs-065',name:'0.65–0.75:1 zoom',min:.65,max:.75},
+ /* Christie: shift from each body's lens / throw-ratio (LTR) tables. Christie quotes offset in % of half the image, so values are
+    halved here. Each axis is listed with the other at zero; Christie doesn't publish a combined range. Body classes (by / no keys):
+    LAMP = xenon D4K / Mirage 4K25-35 / Roadie, BOX = Boxer and Mirage 304K, RGB40 = D4K40 / Mirage 4K40-RGB, HS… / GS… / CR… / M4K… below. */
+ CH4K:{name:'Christie 3DLP 4K HB/UHC lenses',src:'Christie LTR tables: Griffyn 020-103422-08, 4K40-RGB 020-102973-07, Boxer / Mirage 304K 020-102164-11, D4K / Mirage lamp 020-100904-03, Roadie 4K 020-102260-01',verified:true,lenses:[
+  {id:'ch4k-038',name:'0.38:1 HB fixed (UST)',min:.38,max:.38,lm:.7,note:'Christie: up to 30% brightness loss. Turn on the UST keep-out in the lens menu.',sv:[-30,42.5],sh:[-17.5,7.5],by:{BOX:{sv:[-20,27.5],sh:[-2.5,22.5]}},no:['LAMP']},
+  {id:'ch4k-072',name:'0.72:1 HB/UHC fixed',min:.72,max:.72,sv:[0,0],sh:0},
+  {id:'ch4k-090',name:'0.9:1 HB/UHC fixed',min:.9,max:.9,sv:[-22.5,22.5],sh:7.5,by:{LAMP:{sv:[-14.5,14.5],sh:4.5}}},
+  {id:'ch4k-113131',name:'1.13–1.31:1 HB zoom (legacy)',min:1.13,max:1.31,sv:[-30,30],sh:12.5,by:{LAMP:{sv:[-28,28],sh:9.5}}},
+  {id:'ch4k-113166',name:'1.13–1.66:1 HB/UHC zoom',min:1.13,max:1.66,sv:[-22.5,22.5],sh:10,no:['LAMP']},
+  {id:'ch4k-131163',name:'1.31–1.63:1 HB zoom (legacy)',min:1.31,max:1.63,sv:[-40,40],sh:15,by:{LAMP:{sv:[-6.5,6.5],sh:2}}},
+  {id:'ch4k-145217',name:'1.45–2.17:1 HB/UHC zoom',min:1.45,max:2.17,sv:[-27.5,27.5],sh:10,no:['LAMP']},
+  {id:'ch4k-163217',name:'1.63–2.17:1 HB zoom (legacy)',min:1.63,max:2.17,sv:[-40,40],sh:15,by:{LAMP:{sv:[-6.5,6.5],sh:2}}},
+  {id:'ch4k-195326',name:'1.95–3.26:1 HB/UHC zoom',min:1.95,max:3.26,sv:[-22.5,22.5],sh:15,no:['LAMP']},
+  {id:'ch4k-199271',name:'1.99–2.71:1 HB zoom (legacy)',min:1.99,max:2.71,sv:[-7.5,7.5],sh:2.5,by:{LAMP:{sv:[-6.5,6.5],sh:2}}},
+  {id:'ch4k-271389',name:'2.71–3.89:1 HB/UHC zoom',min:2.71,max:3.89,sv:[-22.5,22.5],sh:7.5,by:{LAMP:{sv:[-6.5,6.5],sh:2}}},
+  {id:'ch4k-389543',name:'3.89–5.43:1 HB/UHC zoom',min:3.89,max:5.43,sv:[-42.5,42.5],sh:12.5,by:{LAMP:{sv:[-6.5,6.5],sh:2}}},
+  {id:'ch4k-498769',name:'4.98–7.69:1 HB zoom',min:4.98,max:7.69,sv:[-45,45],sh:20,by:{LAMP:{sv:[-28,28],sh:9.5}},no:['RGB40','Griffyn 4K32-RGB']}]},
+ CHILS:{name:'Christie HS lenses (140-xxx)',src:'Christie LTR tables: DWU-HS 020-103718-03, D20WU / D16WU 020-102953-06, D20HD 020-102952-05, D13WU 020-102232-03, D13HD 020-102231-03, 4K-HS 020-102940-06',verified:true,strict:true,lenses:[
+  {id:'ils-038',name:'0.38:1 fixed (UST)',tr:{WU:[.38,.38],HS4K:[.553,.553]},sv:[-25,50],sh:[-2,12.5],by:{HS20WU:{sv:[-27.5,50],sh:[-14,2]},HS20HD:{sv:[-32.5,60],sh:[-7.5,3.5]},HS4K:{sv:[-70,70],sh:30}},no:['HS13WU','HS13HD'],note:'On the 4K7 / 4K10-HS this lens throws 0.55:1 and loses about 35% of the light.'},
+  {id:'ils-065',name:'0.65–0.75:1 zoom',tr:{WU:[.65,.75]},sv:[-32.5,32.5],sh:15,by:{HS20WU:{sv:[-60,60],sh:25},HS20HD:{sv:[-60,60],sh:25}},no:['HS13WU','HS13HD']},
+  {id:'ils-084',name:'0.84–1.02:1 zoom',tr:{WU:[.84,1.02]},sv:[-13.5,13.5],sh:5.5,by:{HS20WU:{sv:[-10.95,60],sh:25},HS20HD:{sv:[-10.95,60],sh:25},HS13WU:{sv:[-21.7,55.8],sh:[-17.65,10.55]},HS13HD:{sv:[-37.25,54.25],sh:[-21.1,14.85]}}},
+  {id:'ils4k-085',name:'0.85–1.02:1 zoom (140-135100, 4K-HS)',tr:{HS4K:[.85,1.02]},sv:[-70,70],sh:30},
+  {id:'ils-102',name:'1.02–1.36:1 zoom',tr:{WU:[1.02,1.36]},sv:[-13.5,13.5],sh:5.5,by:{HS20WU:{sv:[-10.95,60],sh:25},HS20HD:{sv:[-10.95,60],sh:25},HS13WU:{sv:[-33.35,55.2],sh:[-23.2,16.2]},HS13HD:{sv:[-49.25,62.05],sh:[-24.6,19.95]}}},
+  {id:'ils4k-120',name:'1.20–1.73:1 zoom (140-136101, 4K-HS)',tr:{HS4K:[1.2,1.73]},sv:[-70,70],sh:30},
+  {id:'ils-120',name:'1.2–1.5:1 zoom',tr:{WU:[1.2,1.5],HS4K:[1.7,2.12]},sv:[-60,60],sh:25,by:{HS13HD:{sv:[-70,70]},HS4K:{sv:[-70,70],sh:30}}},
+  {id:'ils-150',name:'1.5–2.0:1 zoom',tr:{WU:[1.5,2.0],HS4K:[2.12,2.83]},sv:[-60,60],sh:25,by:{HS13HD:{sv:[-70,70]},HS4K:{sv:[-70,70],sh:30}}},
+  {id:'ils-200',name:'2.0–4.0:1 zoom',tr:{WU:[2.0,4.0],HS4K:[2.83,5.66]},sv:[-60,60],sh:25,by:{HS13HD:{sv:[-70,70]},HS4K:{sv:[-70,70],sh:30}}},
+  {id:'ils-400',name:'4.0–7.2:1 zoom',tr:{WU:[4.0,7.2],HS4K:[5.66,10.18]},sv:[-60,60],sh:25,by:{HS13HD:{sv:[-70,70]},HS4K:{sv:[-70,70],sh:30}}},
+  {id:'ils-720',name:'7.2–10.8:1 zoom',tr:{WU:[7.2,10.8]},sv:[-60,60],sh:25,no:['HS13WU','HS13HD']}]},
+ CHILS1:{name:'Christie ILS1 lenses (118-xxx: Crimson, M 4K RGB)',src:'Christie LTR tables: Crimson / Mirage HD 020-102880-04 (Crimson WU assumed the same), M 4K RGB 020-103495-05',verified:true,lenses:[
+  {id:'ils1-037',name:'0.37:1 UST',min:.37,max:.37,sv:[-67.5,50.95],sh:[-40,23.55],by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-62,62],sh:30}}},
+  {id:'ils1-067',name:'0.67:1 fixed',min:.67,max:.67,sv:[-17.5,17.5],sh:6,by:{M4KP:{sv:[-11,11],sh:4.5}}},
+  {id:'ils1-067u',name:'0.67:1 fixed UHC',min:.67,max:.67,sv:[-17.5,17.5],sh:6,by:{M4KP:{sv:[-11,11],sh:4.5}},no:['CRHD','CRWU']},
+  {id:'ils1-080',name:'0.80–1.16:1 zoom',min:.8,max:1.16,sv:[-55,57],sh:[-16,19],by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-47.5,47.5],sh:21.5}}},
+  {id:'ils1-080u',name:'0.80–1.16:1 UHC zoom',min:.8,max:1.16,sv:[-55,55],sh:17.5,by:{M4KP:{sv:[-50,50],sh:16}},no:['CRHD','CRWU']},
+  {id:'ils1-110',name:'1.1:1 fixed',min:1.1,max:1.1,sv:[-60,60],sh:21,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-57,57],sh:27.5}}},
+  {id:'ils1-116',name:'1.16–1.49:1 zoom',min:1.16,max:1.49,sv:[-51,51],sh:20,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-41,41],sh:19}}},
+  {id:'ils1-128u',name:'1.28–1.87:1 UHC zoom',min:1.28,max:1.87,sv:[-64,64],sh:29,by:{M4KP:{sv:[-45,45],sh:21}},no:['CRHD','CRWU']},
+  {id:'ils1-140',name:'1.4–1.8:1 zoom',min:1.4,max:1.8,sv:[-60,60],sh:21,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-57,57],sh:27.5}}},
+  {id:'ils1-180',name:'1.8–2.6:1 zoom',min:1.8,max:2.6,sv:[-60,60],sh:21,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-57,57],sh:27.5}}},
+  {id:'ils1-260',name:'2.6–4.1:1 zoom',min:2.6,max:4.1,sv:[-60,60],sh:21,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-57,57],sh:27.5}}},
+  {id:'ils1-410',name:'4.1–6.9:1 zoom',min:4.1,max:6.9,sv:[-60,60],sh:21,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-57,57],sh:27.5}}},
+  {id:'ils1-690',name:'6.9–10.4:1 zoom',min:6.9,max:10.4,sv:[-60,60],sh:21,by:{M4K:{sv:[-64,64],sh:36},M4KP:{sv:[-57,57],sh:27.5}}}]},
+ CHGS:{name:'Christie GS Series lenses',src:'Christie LTR tables: DWU1400 / 1100 / 880-GS 020-103715-04, DWU1075 020-102672-04, DWU850 020-102325-04, DHD1075 020-102673-04, DHD850 020-102324-02, DWU599 020-102523-01, DHD599 020-102524-01',verified:true,sv:[-50,50],sh:15,by:{GSOHD:{sv:[-60,60]},GS599HD:{sv:[-60,60]}},lenses:[
+  {id:'gs-036',name:'0.36:1 fixed (UST)',min:.36,max:.36,sv:false,sh:false,no:['GS599','GS599HD'],note:'No lens shift; Christie doesn’t list its built-in offset, so it isn’t limited here.'},
+  {id:'gs-037',name:'0.37–0.4:1 UST 90° (table/ceiling)',min:.37,max:.40,sh:10,no:['GSO','GSOHD','GS599','GS599HD']},
+  {id:'gs-065',name:'0.65–0.75:1 zoom',min:.65,max:.75,no:['GS599','GS599HD']},
   {id:'gs-075',name:'0.75–0.95:1 zoom',min:.75,max:.95},
   {id:'gs-095',name:'0.95–1.22:1 zoom',min:.95,max:1.22},
   {id:'gs-122',name:'1.22–1.52:1 zoom',min:1.22,max:1.52},
   {id:'gs-152',name:'1.52–2.89:1 zoom',min:1.52,max:2.89},
   {id:'gs-290',name:'2.90–5.50:1 zoom',min:2.9,max:5.5}]},
- BTLD:{name:'Barco TLD+ lenses',src:'Barco TLD+ part listings (ratios differ by chip: WUXGA / WQXGA / native 4K)',verified:true,lenses:[
-  {id:'tld-ust',name:'TLD+ 0.37:1 UST 90° (R9801661)',tr:{WU:[.39,.39],WQ:[.42,.42],N4K:[.38,.38]}},
-  {id:'tld-065',name:'TLD+ 0.65–0.85:1',tr:{WU:[.67,.88],WQ:[.71,.93],N4K:[.64,.82]}},
-  {id:'tld-080',name:'TLD+ Ultra 0.8–1.16:1',tr:{WU:[.86,1.25],WQ:[.93,1.33],N4K:[.8,1.16]}},
-  {id:'tld-116',name:'TLD+ 1.16–1.49:1 (R9862005)',tr:{WU:[1.16,1.49],WQ:[1.24,1.56]}},
-  {id:'tld-150',name:'TLD+ 1.5–2.0:1 (R9862010)',tr:{WU:[1.39,1.87],WQ:[1.48,2.0]}},
-  {id:'tld-200',name:'TLD+ 2.0–2.8:1 (R9862020)',tr:{WU:[1.87,2.56],WQ:[2.0,2.76]}},
-  {id:'tld-280',name:'TLD+ 2.8–4.5:1 (R9862030)',tr:{WU:[2.56,4.17],WQ:[2.73,4.43]}},
-  {id:'tld-450',name:'TLD+ 4.5–7.5:1 (R9862040)',tr:{WU:[4.17,6.92],WQ:[4.43,7.33]},est:true},
-  {id:'tld-750',name:'TLD+ 7.5–11.2:1 (R9829997)',tr:{WU:[6.93,10.3],WQ:[7.39,10.8]}}]},
- BG:{name:'Barco G lenses',src:'Barco G62 installation manual, lens table (G100 / I600 fit approximate)',verified:true,lenses:[
-  {id:'g-036',name:'G UST 0.36:1 (R9801785)',min:.36,max:.36},
-  {id:'g-037',name:'G UST 90° 0.37–0.4:1 (R9801830)',min:.37,max:.40},
-  {id:'g-065',name:'G short throw 0.65–0.75:1 (R9832781)',min:.65,max:.75},
+ /* Barco: shift and image-circle data from Barco's Lens Calculator (lenscalculator.barco.com). Barco quotes shift in % of half the
+    image, so its values are halved here. D = lens image circle in mm: the chip's corners must stay inside it, so full V and full H
+    can't be used together. Throw ratios differ by chip (tr keys = body chip class); lenses with no ratio for a body don't fit it. */
+ BTLD:{name:'Barco TLD+ lenses',src:'Barco Lens Calculator; UDX / HDX spec sheets and manuals',verified:true,strict:true,sv:[-50,65],sh:15,by:{HDF:{sv:[-15,60],sh:20},HDX:{sv:[-15,60],sh:20}},lenses:[
+  {id:'tld-ust',name:'TLD+ 0.37:1 UST 90° (R9801661)',tr:{WU:[.39,.39],WQ:[.42,.42],N4K:[.36,.36]},sv:[-50,65],sh:[-5,10],by:{UDM:{sv:[-75,80],sh:30},QDX:{sv:[-75,80],sh:30}},note:'Periscope lens: the image leaves at 90°, to the left seen from behind in a table mount. H shift is one-sided on UDX / HDX / HDF.'},
+  {id:'tld-065',name:'TLD+ 0.65–0.85:1 (R9862001)',tr:{WU:[.67,.88],WQ:[.71,.93],N4K:[.63,.83]},sv:[-50,55],sh:5,by:{UDM:{sv:[-50,65],sh:10},QDX:{sv:[-50,65],sh:10}}},
+  {id:'tld-073',name:'TLD+ 0.73:1 fixed (R9862000 / HDX–HDF R9842041)',tr:{WU:[.73,.73]},sv:[-15,17.5],sh:10,by:{HDF:{sv:[-17.5,17.5],sh:10},HDX:{sv:[-17.5,17.5],sh:10}}},
+  {id:'tld-080',name:'TLD+ Ultra 0.8–1.16:1 (R9801414)',tr:{WU:[.86,1.25],WQ:[.93,1.33],N4K:[.81,1.17]},sv:[-50,50],sh:15,by:{HDF:{sv:[-15,50],sh:20},HDX:{sv:[-15,50],sh:20}}},
+  {id:'tld-116',name:'TLD+ 1.25–1.6:1 (R9862005)',tr:{WU:[1.17,1.5],WQ:[1.25,1.6],N4K:[1.1,1.41]}},
+  {id:'tld-120',name:'TLD+ 1.2:1 fixed (R9840775)',tr:{WU:[1.2,1.2]},by:{HDX:{sv:[-15,55],sh:20}}},
+  {id:'tld-150',name:'TLD+ 1.5–2.0:1 (R9862010)',tr:{WU:[1.39,1.89],WQ:[1.49,2.03],N4K:[1.3,1.77]}},
+  {id:'tld-200',name:'TLD+ 2.0–2.8:1 (R9862020)',tr:{WU:[1.89,2.55],WQ:[2.02,2.73],N4K:[1.77,2.39]}},
+  {id:'tld-280',name:'TLD+ 2.8–4.5:1 (R9862030)',tr:{WU:[2.56,4.13],WQ:[2.74,4.43],N4K:[2.4,3.87]}},
+  {id:'tld-450',name:'TLD+ 4.5–7.5:1 (R9862040)',tr:{WU:[4.12,6.97],WQ:[4.42,7.46],N4K:[3.86,6.53]}},
+  {id:'tld-750',name:'TLD+ 7.5–11.2:1 (R9829997)',tr:{WU:[6.92,10.21],WQ:[7.41,11.03],N4K:[6.49,9.57]}}]},
+ BG:{name:'Barco G lenses (G50 / G60 / G62)',src:'Barco Lens Calculator; G62 installation manual lens table',verified:true,sv:[-50,50],sh:15,D:23.5,lenses:[
+  {id:'g-036',name:'G UST 0.36:1 rear (R9801785)',min:.36,max:.36,base:92,sv:[-1,1],sh:0,D:0,no:['G50'],note:'Rear-projection UST with a fixed offset: the image centre sits about 92% of the image height above the lens axis. Not for the G50.'},
+  {id:'g-037',name:'G UST 90° 0.37–0.4:1 (R9801830)',min:.37,max:.40,sv:[-60,60],sh:20,D:25},
+  {id:'g-065',name:'G short throw 0.65–0.75:1 (R9802300)',min:.65,max:.75,sv:[-60,60],sh:20,D:25.2},
   {id:'g-075',name:'G short throw 0.75–0.95:1 (R9801840)',min:.75,max:.95},
   {id:'g-095',name:'G wide zoom 0.95–1.22:1 (R9832755)',min:.95,max:1.22},
   {id:'g-122',name:'G standard 1.22–1.52:1 (R9801784)',min:1.22,max:1.52},
   {id:'g-152',name:'G long zoom 1.52–2.92:1 (R9832756)',min:1.52,max:2.92},
   {id:'g-290',name:'G ultra long 2.90–5.50:1 (R9832778)',min:2.9,max:5.5}]},
- BF:{name:'Barco GLD / FLD+ / FLDX lenses (F-series)',src:'Barco F80-4K12 lens overview (WQXGA ratios; F70 / F90-W fit approximate)',verified:true,lenses:[
-  {id:'f-ust',name:'FLDX UST 90° 0.38:1 (R9801832)',min:.38,max:.38},
-  {id:'f-065',name:'FLD+/FLDX 0.65:1 fixed (EN47/67)',min:.65,max:.65,note:'Heavy; needs lens support'},
-  {id:'f-080',name:'FLD+ 0.80:1 fixed (EN42)',min:.8,max:.8},
-  {id:'f-gld085',name:'GLD 0.85–1.06:1 (R98017241)',min:.85,max:1.06},
-  {id:'f-gld106',name:'GLD 1.06–1.43:1 (R98017221)',min:1.06,max:1.43},
-  {id:'f-gld143',name:'GLD 1.43–2.12:1 (R98017201)',min:1.43,max:2.12},
-  {id:'f-gld212',name:'GLD 2.12–3.18:1 (R98017211)',min:2.12,max:3.18},
-  {id:'f-120',name:'FLD+/FLDX 1.20–1.70:1 (EN43/63)',min:1.2,max:1.7},
-  {id:'f-170',name:'FLD+/FLDX 1.7–2.5:1 (EN41/61)',min:1.7,max:2.5},
-  {id:'f-250',name:'FLD+ 2.50–4.60:1 (EN44)',min:2.5,max:4.6},
-  {id:'f-380',name:'FLD 3.8–6.5:1 (EN16)',min:3.8,max:6.5},
-  {id:'f-650',name:'FLDX 6.5–9.0:1 (EN69)',min:6.5,max:9.0}]},
+ BGC:{name:'Barco GC lenses (G100)',src:'Barco Lens Calculator',verified:true,sv:[-60,60],sh:25,D:35.5,lenses:[
+  {id:'gc-038',name:'FLDX 0.38:1 UST (R9801832)',min:.38,max:.38,sv:[-60,45],sh:[0,25],D:35.8,note:'Needs the FLDX adapter and a lens support. H shift goes one way only.'},
+  {id:'gc-065',name:'GC 0.65–0.75:1 (R9802188)',min:.65,max:.75,sv:[-51,51],sh:24,D:33.7},
+  {id:'gc-084',name:'GC 0.84–1.02:1 (R9802181)',min:.84,max:1.02,sv:[-37,37],sh:13,D:30.9},
+  {id:'gc-102',name:'GC 1.02–1.36:1 (R9802182)',min:1.02,max:1.36,sv:[-41,41],sh:15,D:31.7},
+  {id:'gc-120',name:'GC 1.2–1.5:1',min:1.2,max:1.5},
+  {id:'gc-150',name:'GC 1.5–2.0:1',min:1.5,max:2.0},
+  {id:'gc-200',name:'GC 2.0–4.0:1',min:2.0,max:4.0},
+  {id:'gc-400',name:'GC 4.0–7.2:1',min:4.0,max:7.2},
+  {id:'gc-720',name:'GC 7.2–10.8:1',min:7.2,max:10.8}]},
+ BILD:{name:'Barco ILD lenses (I600)',src:'Barco Lens Calculator',verified:true,sv:[-55,55],sh:15,lenses:[
+  {id:'ild-037',name:'ILD 0.37:1 UST (R9803077)',min:.37,max:.37},
+  {id:'ild-050',name:'ILD 0.5:1 UST (R9803076)',min:.5,max:.5},
+  {id:'ild-065',name:'ILD 0.65–0.8:1 (R9803072)',min:.65,max:.8},
+  {id:'ild-080',name:'ILD 0.8–1.0:1 (R98030711)',min:.8,max:1.0,sv:[-40,55]},
+  {id:'ild-100',name:'ILD 1.0–1.4:1 (R9803070)',min:1.0,max:1.4},
+  {id:'ild-140',name:'ILD 1.4–2.1:1 (R9803061)',min:1.4,max:2.1},
+  {id:'ild-210',name:'ILD 2.1–4.0:1 (R9803075)',min:2.1,max:4.0},
+  {id:'ild-400',name:'ILD 4.0–7.4:1 (R9803073)',min:4.0,max:7.4}]},
+ BF:{name:'Barco FLD+ / FLDX / GLD lenses (F-series)',src:'Barco Lens Calculator (ratios and shift per body: F70 / F90 4K, F70 / F90 WUXGA, F80)',verified:true,strict:true,lenses:[
+  {id:'f-ust',name:'FLDX UST 90° 0.38:1 (R9801832)',tr:{F4K:[.38,.38],FW:[.38,.38],F80:[.54,.54]},by:{F4K:{sv:[-72.5,72.5],sh:35,D:35.8},FW:{sv:[-60,60],sh:27.5,D:35.8},F80:{sv:[-62.5,62.5],sh:26.5,D:25.25}}},
+  {id:'f-065',name:'FLD+/FLDX 0.65:1 fixed (EN47/67)',tr:{F4K:[.61,.61],FW:[.57,.57]},note:'Heavy; needs lens support',by:{F4K:{sv:[-39.5,39.5],sh:18,D:29},FW:{sv:[-28,28],sh:12.5,D:29}}},
+  {id:'f-080',name:'FLD+ 0.80:1 fixed (EN42)',tr:{F4K:[.8,.8],FW:[.75,.75]},by:{F4K:{sv:[-1.5,1.5],sh:.5},FW:{sv:[0,0],sh:0}},note:'Effectively no lens shift on F70 / F90.'},
+  {id:'f-gld037',name:'GLD UST 90° 0.37–0.40:1 (R9409803)',tr:{F80:[.37,.40]},sv:[-67.5,67.5],sh:25},
+  {id:'f-gld085',name:'GLD 0.8–1.06:1 (R98017241)',tr:{F80:[.8,1.06]},sv:[-51,51],sh:22.5,D:23.57},
+  {id:'f-gld106',name:'GLD 1.0–1.43:1 (R98017221)',tr:{F80:[1.0,1.43]},sv:[-56,56],sh:25,D:24.27},
+  {id:'f-gld143',name:'GLD 1.35–2.12:1 (R98017201)',tr:{F80:[1.35,2.12]},sv:[-50,50],sh:22.5,D:23.43},
+  {id:'f-gld212',name:'GLD 2.0–3.18:1 (R98017211)',tr:{F80:[2.0,3.18]},sv:[-56,56],sh:25,D:24.27},
+  {id:'f-120',name:'FLD+/FLDX 1.20–1.70:1 (EN43/63)',tr:{F4K:[1.2,1.7],FW:[1.12,1.58]},by:{F4K:{sv:[-58.5,58.5],sh:28,D:32.6},FW:{sv:[-47,47],sh:22,D:32.6}}},
+  {id:'f-170',name:'FLD+/FLDX 1.7–2.5:1 (EN41/61)',tr:{F4K:[1.7,2.5],FW:[1.58,2.33],F80:[2.25,3.3]},by:{F4K:{sv:[-72,72],sh:35.5,D:35.3},FW:{sv:[-60,60],sh:29,D:35.3},F80:{sv:[-62.5,62.5],sh:26.5,D:25.25}}},
+  {id:'f-250',name:'FLD+ 2.50–4.60:1 (EN44)',tr:{F4K:[2.5,4.6],FW:[2.33,4.3],F80:[3.3,6.08]},note:'Barco: brightness limited to 8,000 lm with this lens',by:{F4K:{sv:[-72,72],sh:35.5},FW:{sv:[-60,60],sh:29},F80:{sv:[-62.5,62.5],sh:26.5,D:25.25}}},
+  {id:'f-380',name:'FLD 3.8–6.5:1 (EN16)',tr:{F4K:[4.07,6.95],FW:[3.8,6.5],F80:[5.37,9.19]},by:{F4K:{sv:[-81.5,81.5],sh:41,D:37.2},FW:{sv:[-69,69],sh:34,D:37.2},F80:{sv:[-62.5,62.5],sh:26.5,D:25.25}}},
+  {id:'f-650',name:'FLDX 6.5–9.0:1 (EN69)',tr:{F4K:[6.06,8.93],FW:[6.5,9.01],F80:[9.19,12.73]},by:{F4K:{sv:[-61.5,61.5],sh:30,D:33.19},FW:{sv:[-50,50],sh:23.5,D:33.19},F80:{sv:[-62.5,62.5],sh:26.5,D:25.25}}}]},
  BQLS2:{name:"BenQ LS2 lenses (LU9235 / LU9245 / LU9255)",src:"BenQ LU9235 / LU9245 spec pages and LU9255 datasheet; lens codes cross-checked with ProjectorCentral",verified:true,lenses:[
   {id:"ls2st3",name:"LS2ST3 Wide Fix (fixed)",min:0.77,max:0.77},
   {id:"ls2st2",name:"LS2ST2 Short Throw zoom (5A.JK337.001)",min:0.77,max:1.1,sv:[-15,55],sh:5},
@@ -319,9 +376,9 @@ const FAM={
 const RAW=[
  ['Christie','Griffyn','Griffyn 4K50-RGB',50000,4096,2160,'3DLP RGB pure laser','CH4K'],
  ['Christie','Griffyn','Griffyn 4K35-RGB',36000,4096,2160,'3DLP RGB pure laser','CH4K'],
- ['Christie','Griffyn','Griffyn 4K32-RGB',31000,4096,2160,'3DLP RGB pure laser','CH4K',{noBig:1}],
- ['Christie','M 4K RGB','M 4K25 RGB',25000,4096,2160,'3DLP RGB pure laser','CH4K'],
- ['Christie','M 4K RGB','M 4K+25 RGB',25000,4096,2160,'3DLP RGB pure laser','CH4K'],
+ ['Christie','Griffyn','Griffyn 4K32-RGB',31000,4096,2160,'3DLP RGB pure laser','CH4K'],
+ ['Christie','M 4K RGB','M 4K25 RGB',25000,4096,2160,'3DLP RGB pure laser','CHILS1'],
+ ['Christie','M 4K RGB','M 4K+25 RGB',25000,4096,2160,'3DLP RGB pure laser','CHILS1'],
  ['Christie','D4K / Mirage','D4K40-RGB',40000,4096,2160,'3DLP RGB pure laser','CH4K'],
  ['Christie','D4K / Mirage','Mirage 4K40-RGB',40000,4096,2160,'3DLP RGB pure laser','CH4K'],
  ['Christie','D4K / Mirage','Mirage 4K35',35000,4096,2160,'3DLP lamp','CH4K'],
@@ -337,10 +394,10 @@ const RAW=[
  ['Christie','Boxer','Boxer 2K30',30000,2048,1080,'3DLP lamp','CH4K'],
  ['Christie','Boxer','Boxer 2K25',25000,2048,1080,'3DLP lamp','CH4K'],
  ['Christie','Boxer','Boxer 2K20',20000,2048,1080,'3DLP lamp','CH4K'],
- ['Christie','Crimson','Crimson WU31',31000,1920,1200,'3DLP lamp','CHILS'],
- ['Christie','Crimson','Crimson WU25',25000,1920,1200,'3DLP lamp','CHILS'],
- ['Christie','Crimson','Crimson HD31',31000,1920,1080,'3DLP lamp','CHILS'],
- ['Christie','Crimson','Crimson HD25',25000,1920,1080,'3DLP lamp','CHILS'],
+ ['Christie','Crimson','Crimson WU31',31000,1920,1200,'3DLP laser phosphor','CHILS1'],
+ ['Christie','Crimson','Crimson WU25',25000,1920,1200,'3DLP laser phosphor','CHILS1'],
+ ['Christie','Crimson','Crimson HD31',31000,1920,1080,'3DLP laser phosphor','CHILS1'],
+ ['Christie','Crimson','Crimson HD25',25000,1920,1080,'3DLP laser phosphor','CHILS1'],
  ['Christie','HS Series','DWU23-HS',23000,1920,1200,'1DLP laser','CHILS'],
  ['Christie','HS Series','DWU19-HS',19000,1920,1200,'1DLP laser','CHILS'],
  ['Christie','HS Series','DWU15-HS',15000,1920,1200,'1DLP laser','CHILS'],
@@ -379,9 +436,9 @@ const RAW=[
  ['Barco','HDF / HDX','HDX-W20 FLEX',20000,1920,1200,'3DLP lamp','BTLD',{tc:'WU'}],
  ['Barco','HDF / HDX','HDX-W18',18000,1920,1200,'3DLP lamp','BTLD',{tc:'WU'}],
  ['Barco','HDF / HDX','HDX-W14',14000,1920,1200,'3DLP lamp','BTLD',{tc:'WU'}],
- ['Barco','G Series','G100-W22',22000,1920,1200,'1DLP laser phosphor','BG'],
- ['Barco','G Series','G100-W19',19000,1920,1200,'1DLP laser phosphor','BG'],
- ['Barco','G Series','G100-W16',16000,1920,1200,'1DLP laser phosphor','BG'],
+ ['Barco','G Series','G100-W22',22000,1920,1200,'1DLP laser phosphor','BGC'],
+ ['Barco','G Series','G100-W19',19000,1920,1200,'1DLP laser phosphor','BGC'],
+ ['Barco','G Series','G100-W16',16000,1920,1200,'1DLP laser phosphor','BGC'],
  ['Barco','G Series','G62-W14',14000,1920,1200,'1DLP laser phosphor','BG'],
  ['Barco','G Series','G62-W11',11000,1920,1200,'1DLP laser phosphor','BG'],
  ['Barco','G Series','G62-W9',9000,1920,1200,'1DLP laser phosphor','BG'],
@@ -390,20 +447,20 @@ const RAW=[
  ['Barco','G Series','G60-W7',7000,1920,1200,'1DLP laser phosphor','BG'],
  ['Barco','G Series','G50-W8',8000,1920,1200,'1DLP laser phosphor','BG'],
  ['Barco','G Series','G50-W6',6000,1920,1200,'1DLP laser phosphor','BG'],
- ['Barco','I Series','I600-4K10',10000,3840,2160,'1DLP laser phosphor','BG'],
- ['Barco','I Series','I600-4K8',8000,3840,2160,'1DLP laser phosphor','BG'],
- ['Barco','F Series','F90-4K13',13000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF'],
- ['Barco','F Series','F90-W13',13000,1920,1200,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F80-4K12',12000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF'],
- ['Barco','F Series','F80-4K9',9000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF'],
- ['Barco','F Series','F80-4K7',7000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF'],
- ['Barco','F Series','F80-Q12',12000,2560,1600,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F80-Q9',9000,2560,1600,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F80-Q7',7000,2560,1600,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F70-4K8',7500,3840,2160,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F70-4K6',5500,3840,2160,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F70-W8',7500,1920,1200,'1DLP laser phosphor','BF'],
- ['Barco','F Series','F70-W6',5500,1920,1200,'1DLP laser phosphor','BF'],
+ ['Barco','I Series','I600-4K10',10000,3840,2160,'1DLP laser phosphor','BILD'],
+ ['Barco','I Series','I600-4K8',8000,3840,2160,'1DLP laser phosphor','BILD'],
+ ['Barco','F Series','F90-4K13',13000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF',{tc:'F4K'}],
+ ['Barco','F Series','F90-W13',13000,1920,1200,'1DLP laser phosphor','BF',{tc:'FW'}],
+ ['Barco','F Series','F80-4K12',12000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF',{tc:'F80'}],
+ ['Barco','F Series','F80-4K9',9000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF',{tc:'F80'}],
+ ['Barco','F Series','F80-4K7',7000,2560,1600,'1DLP laser phosphor · 4K UHD shift','BF',{tc:'F80'}],
+ ['Barco','F Series','F80-Q12',12000,2560,1600,'1DLP laser phosphor','BF',{tc:'F80'}],
+ ['Barco','F Series','F80-Q9',9000,2560,1600,'1DLP laser phosphor','BF',{tc:'F80'}],
+ ['Barco','F Series','F80-Q7',7000,2560,1600,'1DLP laser phosphor','BF',{tc:'F80'}],
+ ['Barco','F Series','F70-4K8',7500,3840,2160,'1DLP laser phosphor','BF',{tc:'F4K'}],
+ ['Barco','F Series','F70-4K6',5500,3840,2160,'1DLP laser phosphor','BF',{tc:'F4K'}],
+ ['Barco','F Series','F70-W8',7500,1920,1200,'1DLP laser phosphor','BF',{tc:'FW'}],
+ ['Barco','F Series','F70-W6',5500,1920,1200,'1DLP laser phosphor','BF',{tc:'FW'}],
  /* BenQ: built-in lenses (fx), projection offset (off, %), adjustable shift around it (sv V range %, sh ±H %); unc = partial or dealer listing */
  ['BenQ',"Business & education","EH600",3500,1920,1080,"1DLP lamp",null,{fx:[1.49,1.64],off:108,src:"https://www.benq.com/en-us/business/projector/eh600/specifications.html"}],
  ['BenQ',"Business & education","EH620",3400,1920,1080,"1DLP lamp",null,{fx:[1.13,1.47],off:105,src:"https://www.benq.com/en-us/business/projector/eh620/specifications.html"}],
@@ -522,7 +579,7 @@ const RAW=[
  ['BenQ',"Short throw home & gaming","TK710STi",3200,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/business/golf-simulator-projector/tk710sti/specifications.html"}],
  ['BenQ',"Short throw home & gaming","X500i",2200,3840,2160,"1DLP 4LED \u00b7 4K UHD XPR",null,{fx:[0.69,0.83],off:102.5,src:"https://www.benq.com/en-us/projector/gaming/x500i/spec.html"}],
  ['BenQ',"Short throw installation (lens shift)","LK936ST",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lk936st/specifications.html"}],
- ['BenQ',"Short throw installation (lens shift)","LK936ST+",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],sv:[-60,60],sh:23,unc:1,src:"https://www.benq.com/content/dam/bb/de/produkt/projektor/Installationsprojektoren/LK936STplus/030322-LK936ST+_datenblatt_de.pdf"}],
+ ['BenQ',"Short throw installation (lens shift)","LK936ST+",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],sv:[-60,60],sh:23,src:"https://www.benq.com/content/dam/bb/de/produkt/projektor/Installationsprojektoren/LK936STplus/030322-LK936ST+_datenblatt_de.pdf"}],
  ['BenQ',"Short throw installation (lens shift)","LK953ST",5000,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/projector/lk953st/specifications.html"}],
  ['BenQ',"Short throw installation (lens shift)","LK954ST",5100,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.eu/en-uk/business/projector/lk954st/specifications.html"}],
  ['BenQ',"Short throw installation (lens shift)","LU935ST",5500,1920,1200,"1DLP laser",null,{fx:[0.81,0.89],off:0,sv:[-60,60],sh:23,src:"https://www.benq.com/en-us/business/golf-simulator-projector/lu935st/specifications.html"}],
@@ -565,17 +622,81 @@ const RAW=[
  ['BenQ',"Ultra short throw","V7000i",2500,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.252,0.252],off:124.5,src:"https://www.benq.eu/en-uk/projector/tv-projector/v7000i/spec.html"}],
  ['BenQ',"Ultra short throw","V7050i",2500,3840,2160,"1DLP laser \u00b7 4K UHD XPR",null,{fx:[0.252,0.252],off:124.5,src:"https://www.benq.com/en-us/projector/tv-projector/v7050i/spec.html"}]
 ];
-const MODELS=RAW.map(r=>({id:(r[0]+'-'+r[2]).toLowerCase().replace(/[^a-z0-9]+/g,'-'),mfr:r[0],series:r[1],name:r[2],lm:r[3],rw:r[4],rh:r[5],tech:r[6],fam:r[7],...(r[8]||{})}));
+const MODELS=RAW.map(r=>({id:(r[0]+'-'+r[2]).toLowerCase().replace(/[^a-z0-9]+/g,'-'),mfr:r[0],series:r[1],name:r[2],line:r[2].split(/[- ]/)[0],lm:r[3],rw:r[4],rh:r[5],tech:r[6],fam:r[7],...(r[8]||{})}));
+/* chip size in mm (Barco Lens Calculator), for lenses with an image circle */
+{const C={WQ:[19,12],WU:[21,13],N4K:[22,12],F4K:[19,12],FW:[21,13],F80:[15,9],G50:[15,9],G60:[15,9],G62:[15,9],G100:[21,13],I600:[17,11]};
+  MODELS.forEach(m=>{if(m.mfr==='Barco')m.chip=C[m.line]||C[m.tc]||null;});}
+/* the keys a lens's or family's `by` / `no` lists can name: model id or name, line (UDX, F80…), chip class, series */
+const bodyKeys=m=>[m.id,m.name,m.line,m.tc,m.cls,m.series];
+/* Christie body classes: which LTR table (lens list, shift, throw) a body follows */
+MODELS.forEach(m=>{if(m.mfr!=='Christie')return;const n=m.name;
+  m.cls=/^(D4K25|D4K35|Mirage 4K25|Mirage 4K35|Roadie)/.test(n)?'LAMP':/^(Boxer|Mirage 304K)/.test(n)?'BOX':/^(D4K40-RGB|Mirage 4K40-RGB)$/.test(n)?'RGB40'
+    :/^DWU(23|19|15)-HS/.test(n)?'HSD':/^D(20|16)WU-HS/.test(n)?'HS20WU':n==='D20HD-HS'?'HS20HD':n==='D13WU-HS'?'HS13WU':n==='D13HD-HS'?'HS13HD':/^4K(10|7)-HS/.test(n)?'HS4K'
+    :/^Crimson HD/.test(n)?'CRHD':/^Crimson WU/.test(n)?'CRWU':n==='M 4K25 RGB'?'M4K':n==='M 4K+25 RGB'?'M4KP'
+    :/^DWU(1400|1100|880)-GS/.test(n)?'GSN':/^DWU(1075|850)-GS/.test(n)?'GSO':/^DHD(1075|850)-GS/.test(n)?'GSOHD':n==='DWU599-GS'?'GS599':n==='DHD599-GS'?'GS599HD':null;
+  if(m.cls==='HS4K')m.tc='HS4K';
+  /* mounting, from the same manuals / datasheets */
+  const any={ceil:true,port:true,free:true};
+  m.orient=m.cls==='LAMP'?(/^(D4K35|Mirage 4K35)/.test(n)?{ceil:false,port:false,tilt:15,roll:15,est:n!=='D4K35',note:'Xenon: keep within ±15° tilt and ±15° roll; the inverted setting only flips the image'}
+      :/^(D4K25|Mirage 4K25)/.test(n)?{ceil:false,port:true,tilt:15,est:true,note:'Portrait only with the lamp door facing down; ±15° tilt'}
+      :{ceil:false,port:false,tilt:15,roll:15,est:true,note:'No Roadie manual found; assumed to share the D4K35’s xenon limits'})
+    :m.cls==='GS599'||m.cls==='GS599HD'?{...any,note:'Portrait needs the Portrait Side Cover, with that one side facing down'}
+    :/^(Griffyn|Boxer)/.test(n)?{...any,note:'Portrait needs a rigging frame rated for the load'}
+    :m.cls==='RGB40'?{...any,est:true,note:'Omnidirectional; portrait isn’t mentioned separately'}:{...any};});
 /* fixed-lens models (extra fx:[min,max]) carry their own one-lens family */
 MODELS.forEach(m=>{if(!m.fx)return;const [a,b]=m.fx;m.fam='FX:'+m.id;
   FAM[m.fam]={name:`Built-in ${a===b?a+':1 fixed':a+'–'+b+':1 zoom'}`,src:m.src||'',verified:!m.unc,fixed:true,lenses:[{id:'fx',name:`Built-in ${a===b?a+':1 fixed lens':a+'–'+b+':1 zoom'}`,min:a,max:b}]};});
 /* lens shift limits. off = maker's "projection offset" (image bottom above the lens axis as % of image height: 100% = bottom edge on
    the axis, 0% = centred), so the image centre sits at base = off − 50. sv (V range) and sh (±H) adjust around base; a lens's own
-   base / sv / sh win over the body's. A known offset with no range is fixed. null = unknown, so anything goes. */
-function shiftSpec(m,lens){if(!m)return null;const base=lens&&lens.base!=null?lens.base:m.off>0?+(m.off-50).toFixed(2):0;
-  const sv=lens&&lens.sv||m.sv,sh=lens&&lens.sh!=null?lens.sh:m.sh;
-  if(sv)return {base,v:[base+sv[0],base+sv[1]],h:sh||0};if(m.off!=null||lens&&lens.base!=null)return {base,v:[base,base],h:0,fixed:true};return null;}
+   base / sv / sh win over the body's, and a family can set defaults (sv / sh / env) for all its lenses. `by` on a lens or family
+   overrides them for one series or model. env 'diamond' = V and H share one budget. A known offset with no range is fixed.
+   null = unknown, so anything goes. */
+function shiftSpec(m,lens){if(!m)return null;const F=(m.fam&&FAM[m.fam])||{},pick=o=>{if(o)for(const k of bodyKeys(m))if(k&&o[k])return o[k];return {};};
+  /* most specific first: this lens on this body, the lens, the body, the family on this body, the family */
+  const lb=pick(lens&&lens.by),fb=pick(F.by),L=[lb,lens||{},m,fb,F],first=k=>{for(const o of L)if(o[k]!=null)return o[k];return null;};
+  const base=lb.base!=null?lb.base:lens&&lens.base!=null?lens.base:m.off>0?+(m.off-50).toFixed(2):0;
+  const sv=first('sv'),sh=first('sh')||0,env=first('env')||'rect',D=first('D'),hr=Array.isArray(sh)?sh:[-sh,sh];
+  const circ=D&&m.chip?{R:D/2,W:m.chip[0],H:m.chip[1]}:null;
+  if(sv)return {base,v:[base+sv[0],base+sv[1]],hr,h:Math.max(-hr[0],hr[1]),env,circ,fixed:sv[0]===sv[1]&&!hr[0]&&!hr[1]};
+  if(m.off!=null||lens&&lens.base!=null)return {base,v:[base,base],hr:[0,0],h:0,fixed:true,env};return null;}
+const hRange=ss=>ss.hr[0]===-ss.hr[1]?`±${ss.hr[1]}%`:`${ss.hr[0]}% to +${ss.hr[1]}%`;
 function restShift(m,lens){const s=shiftSpec(m,lens);return s?clamp(s.base,s.v[0],s.v[1]):0;}
+/* how much of the shift range is in use on each axis (1 = at the limit). A 'diamond' envelope trades V against H: fv + fh ≤ 1.
+   With an image circle the chip's corners must stay inside it: ((|h|+½)·W)² + ((|v|+½)·H)² ≤ R², shifts as fractions of the image */
+function circFrac(c,v,h){const k=((Math.abs(h)/100+.5)*c.W)**2+((Math.abs(v)/100+.5)*c.H)**2,k0=(.5*c.W)**2+(.5*c.H)**2;return c.R*c.R>k0?Math.max(0,(k-k0)/(c.R*c.R-k0)):Infinity;}
+function circMax(c,other,oSize,size){const r=c.R*c.R-((Math.abs(other)/100+.5)*oSize)**2;return r>0?Math.max(0,(Math.sqrt(r)/size-.5)*100):0;}
+function shiftUse(ss,v,h){const dv=v-ss.base,vm=dv>=0?ss.v[1]-ss.base:ss.base-ss.v[0],hm=h>=0?ss.hr[1]:-ss.hr[0];
+  const fv=Math.abs(dv)<.05?0:vm>0?Math.abs(dv)/vm:Infinity,fh=Math.abs(h)<.05?0:hm>0?Math.abs(h)/hm:Infinity;
+  const fc=ss.circ&&(fv||fh)?circFrac(ss.circ,v,h):0;
+  return {fv,fh,fc,f:Math.max(ss.env==='diamond'?fv+fh:Math.max(fv,fh),fc)};}
+/* pull one axis back inside the envelope, leaving the other alone; true if it had to move */
+function clampShift(p,axis){const ss=shiftSpec(modelOf(p),lensOf(p));if(!ss||ss.fixed)return false;const u=shiftUse(ss,p.shiftV,p.shiftH),c=ss.circ;
+  if(axis==='v'){const k=ss.env==='diamond'?clamp(1-u.fh,0,1):1;let lo=ss.base-k*(ss.base-ss.v[0]),hi=ss.base+k*(ss.v[1]-ss.base);
+    if(c){const mx=circMax(c,p.shiftH,c.W,c.H);lo=Math.max(lo,-mx);hi=Math.min(hi,mx);}
+    const v=+clamp(p.shiftV,Math.min(lo,hi),hi).toFixed(2);if(Math.abs(v-p.shiftV)<1e-6)return false;p.shiftV=v;return true;}
+  const k=ss.env==='diamond'?clamp(1-u.fv,0,1):1;let lo=k*ss.hr[0],hi=k*ss.hr[1];
+  if(c){const mx=circMax(c,p.shiftV,c.H,c.W);lo=Math.max(lo,-mx);hi=Math.min(hi,mx);}
+  const h=+clamp(p.shiftH,Math.min(lo,hi),hi).toFixed(2);if(Math.abs(h-p.shiftH)<1e-6)return false;p.shiftH=h;return true;}
+/* mounting: ceil = can hang upside down, port = can run on its side (portrait), free = any tilt (360°), tilt = max ± pitch
+   in degrees when it isn't free. Keyed by "maker|series"; a model's own orient wins. Missing = not in the catalog, so nothing is checked. */
+const ORIENT={
+  'Barco|UDX':{ceil:true,port:true,free:true},'Barco|UDM':{ceil:true,port:true,free:true},'Barco|QDX':{ceil:true,port:true,free:true},
+  'Barco|HDF / HDX':{ceil:true,port:true,roll:15,note:'Any pitch; side-to-side tilt within ±15°, and portrait only with the lamp door at the bottom (HDF limits taken from the HDX manual)'},
+  'Barco|G Series':{ceil:true,port:true,free:true},'Barco|I Series':{ceil:true,port:true,free:true},'Barco|F Series':{ceil:true,port:true,free:true}};
+/* BenQ: 360° / portrait claims from the product overview pages, lamp tilt limits from BenQ lamp-model manuals */
+{const full='LU9235 LU9245 LU9255 LU9715 LU9750 LU9800 LU9915 LK936ST LK936ST+ LK954ST LU951ST LK953ST LU960ST LU960ST2 LU960UST LU785 LH830ST LK830ST LW830ST'.split(' '),
+  any='LH930 LK935 LK952 LU710 LU930 LU935 LU950 LU951 LU895UST'.split(' '),tv='V5000i V5010i V7000i V7050i'.split(' '),
+  portable='GP100A GS2 GS50 GV1 GV10 GV11 GV30 GV31 GV32 GV50 GV50P'.split(' ');
+  MODELS.forEach(m=>{if(m.mfr!=='BenQ'||m.orient)return;const n=m.name;
+    m.orient=full.includes(n)?{ceil:true,port:true,free:true,est:n==='LU9245'||n==='LU9255'}
+      :any.includes(n)?{ceil:true,free:true,note:'BenQ lists 360° installation but doesn’t mention portrait'}
+      :tv.includes(n)?{ceil:false,port:false,tilt:0,est:true,note:'Made to sit on a console in front of the screen'}
+      :n==='GP520'?{ceil:true,note:'BenQ: front, side, inverted or upward projection from the 1/4" screw mount'}
+      :portable.includes(n)?{ceil:false,port:false,est:true,note:'Portable: upward projection from its own stand, not a ceiling hang'}
+      :/lamp/.test(m.tech)?{ceil:true,port:false,tilt:15,est:true,note:'BenQ lamp models: keep within ±15° front to back and ±10° side to side'}
+      :{ceil:true,est:true,note:'Ceiling mount listed; BenQ doesn’t say whether it can run on its side or at any tilt'};});}
+MODELS.forEach(m=>{if(m.mfr==='Barco'&&m.line==='F70')m.orient={ceil:true,port:true,free:true,est:true,note:'Assumed from the F90, which shares its platform'};});
+function orientOf(m){return m&&(m.orient||ORIENT[m.mfr+'|'+m.series])||null;}
 MODELS.push({id:'custom',mfr:'Other',series:'Custom',name:'Custom projector…',lm:10000,rw:1920,rh:1200,tech:'Enter your own specs',fam:null,custom:true});
 const MODEL=Object.fromEntries(MODELS.map(m=>[m.id,m]));
 const CUSTOM_LENS={id:'custom',name:'Custom lens / zoom range…',custom:true};
@@ -588,8 +709,10 @@ function mergeLib(o){if(!o)return 0;let n=0;['projectors','lenses'].forEach(k=>(
 function userModel(id){const u=LIB.projectors.find(x=>x.id===id);return u?{id:u.id,mfr:u.mfr||'My equipment',series:'My equipment',name:u.name,lm:+u.lm||1000,rw:+u.rw||1920,rh:+u.rh||1080,tech:u.tech||'Custom specs',fam:FAM[u.fam]?u.fam:null,user:true}:null;}
 function userLenses(){return LIB.lenses.map(l=>({id:l.id,name:'My lens: '+l.name,min:Math.min(+l.min,+l.max),max:Math.max(+l.min,+l.max),lm:l.lm!=null&&l.lm!==''?(+l.lm)/100:1,note:l.note||'',user:true}));}
 function modelOf(p){if(p.model&&String(p.model).startsWith('u-')){const u=userModel(p.model);if(u)return u;}const m=MODEL[p.model]||MODELS[0];if(m.custom)return {...m,lm:p.cLm,rw:p.cRw,rh:p.cRh,name:p.cName||m.name};return m;}
-function lensesFor(m){let ls=m.fam?FAM[m.fam].lenses:[];if(m.noBig)ls=ls.filter(l=>!l.big);return [...ls,...userLenses(),CUSTOM_LENS];}
-function lensOf(p){const m=modelOf(p);const ls=lensesFor(m);return ls.find(l=>l.id===p.lens)||ls[0];}
+function lensesFor(m){const F=m.fam?FAM[m.fam]:null,ks=bodyKeys(m);let ls=F?F.lenses:[];if(m.noBig)ls=ls.filter(l=>!l.big);
+  /* strict families only offer a lens on bodies it has a throw ratio for */
+  ls=ls.filter(l=>!(l.no&&l.no.some(k=>ks.includes(k)))&&!(F.strict&&l.tr&&!l.tr[m.tc||'WU']));return [...ls,...userLenses(),CUSTOM_LENS];}
+function lensOf(p){const m=modelOf(p);const ls=lensesFor(m);return ls.find(l=>l.id===p.lens)||ls.find(l=>l.id===defaultLens(m))||ls[0];}
 function lensRangeFor(l,m,p){
   if(l.custom)return [Math.min(p.cMin,p.cMax),Math.max(p.cMin,p.cMax)];
   if(l.tr){const c=m.tc||'WU';let r=l.tr[c];if(!r)r=l.tr.WU.map(v=>+(v*0.95).toFixed(2));return r;}
@@ -630,7 +753,7 @@ let uidN=1;const uid=p=>p+(uidN++).toString(36)+Math.random().toString(36).slice
 
 function newProjector(over={}){
   const m=MODEL[over.model]||MODEL['barco-udx-4k32'];
-  return Object.assign({id:uid('p'),name:'P'+(S?S.projectors.length+1:1),model:m.id,lens:defaultLens(m),zoom:.5,x:5,z:12,h:3.2,yaw:0,pitch:0,roll:0,shiftV:restShift(m,lensesFor(m).find(l=>l.id===defaultLens(m))),shiftH:0,content:'native',out:100,on:true,target:'auto',cLm:10000,cRw:1920,cRh:1200,cMin:1.2,cMax:1.8,cName:'My projector',cLensName:'My lens',lvl:'floor',img:null,color:COLORS[(S?S.projectors.length:0)%COLORS.length]},over);
+  return Object.assign({id:uid('p'),name:'P'+(S?S.projectors.length+1:1),model:m.id,lens:defaultLens(m),zoom:.5,x:5,z:12,h:3.2,yaw:0,pitch:0,roll:0,shiftV:restShift(m,lensesFor(m).find(l=>l.id===defaultLens(m))),shiftH:0,content:'native',out:100,on:true,target:'auto',cLm:10000,cRw:1920,cRh:1200,cMin:1.2,cMax:1.8,cName:'My projector',cLensName:'My lens',lvl:'floor',autoMount:false,img:null,color:COLORS[(S?S.projectors.length:0)%COLORS.length]},over);
 }
 function newScreen(over={}){return Object.assign({id:uid('s'),name:'Screen '+(S?S.screens.length+1:1),type:'flat',w:6,h:3.375,aspect:'16:9',x:5,z:.15,elev:.5,yaw:0,tilt:0,R:8,convex:false,bend:'h',gain:1.0},over);}
 function newPerson(over={}){return Object.assign({id:uid('h'),type:'standing',x:5,z:6,hh:null,yaw:0,lvl:'floor'},over);}
@@ -1277,11 +1400,11 @@ function changed(kind){
   dirty.compute=true;save();
 }
 function fld(label,input,opts={}){const w=el('label','fld'+(opts.wide?' wide':''));const s=el('span');s.textContent=label;if(opts.ro){const em=el('em');em.dataset.ro=opts.ro;s.append(em);}w.append(s,input);return w;}
-function num(obj,key,{kind='len',step,min,max,id,on='obj',after}={}){
+function num(obj,key,{kind='len',step,min,max,id,on='obj',after,onClamp}={}){
   const i=el('input');i.type='number';i.id=id||('f-'+(obj.id||'g')+'-'+key);
   const toV=v=>kind==='len'?+toD(v).toFixed(3):v;const fromV=v=>kind==='len'?fromD(v):v;
   i.value=toV(obj[key]);i.step=step!=null?step:(kind==='len'?(S.units==='ft'?.5:.1):1);if(min!=null)i.min=kind==='len'?toD(min):min;if(max!=null)i.max=kind==='len'?toD(max):max;
-  i.addEventListener('input',()=>{const v=parseFloat(i.value);if(!isFinite(v))return;let mv=fromV(v);if(min!=null)mv=Math.max(min,mv);if(max!=null)mv=Math.min(max,mv);obj[key]=mv;after&&after();changed(on);});
+  i.addEventListener('input',()=>{const v=parseFloat(i.value);if(!isFinite(v))return;let mv=fromV(v);const raw=mv;if(min!=null)mv=Math.max(min,mv);if(max!=null)mv=Math.min(max,mv);obj[key]=mv;if(mv!==raw&&onClamp)onClamp();after&&after();changed(on);});
   i.addEventListener('change',()=>{i.value=toV(obj[key]);});/* show the clamped value once editing ends */
   return i;
 }
@@ -1414,16 +1537,27 @@ function renderProj(){
   const pos=sec('Position & aim');const g2=el('div','grid3');
   g2.append(fld('X',num(p,'x',{min:-500,max:1500})),fld('Z',num(p,'z',{min:-500,max:1500})),fld('Height above ground',num(p,'h',{min:-5,max:100})));
   if(S.mode==='theatre'&&S.th.bal)g2.append(fld('Level',sel(p,'lvl',[['floor','House floor / stage'],['balcony','Balcony']],{on:'obj'})));
-  g2.append(fld('Yaw °',num(p,'yaw',{kind:'n',step:.5,min:-360,max:360})),fld('Pitch °',num(p,'pitch',{kind:'n',step:.5,min:-90,max:90})),fld('Roll °',num(p,'roll',{kind:'n',step:.5,min:-180,max:180})));
-  /* shift is limited to the published range for this body and lens where we know it */
-  const ss=shiftSpec(m,lens),vr=ss?ss.v:[-150,150],hr=ss?ss.h:100;
-  const shV=num(p,'shiftV',{kind:'n',step:1,min:vr[0],max:vr[1]}),shH=num(p,'shiftH',{kind:'n',step:1,min:-hr,max:hr});if(ss){shV.disabled=!!ss.fixed;shH.disabled=!ss.h;}
+  const o=orientOf(m),ms=el('select');ms.id='f-'+p.id+'-mount';
+  [['auto','Auto (pick for the target)'],...MOUNTS].forEach(([v,t])=>{const op=el('option');op.value=v;op.disabled=!mountOK(o,v);op.textContent=t+(mountOK(o,v)?'':' (not supported)');ms.append(op);});
+  ms.value=p.autoMount?'auto':mountOf(p);
+  ms.addEventListener('change',()=>{p.autoMount=ms.value==='auto';if(p.autoMount)applyAutoMount(p);else setMount(p,ms.value);changed('obj');render();});
+  g2.append(fld('Mounting',ms,{wide:true}));
+  const roll=num(p,'roll',{kind:'n',step:.5,min:-180,max:180,after:()=>{p.autoMount=false;ms.value=mountOf(p);}});
+  g2.append(fld('Yaw °',num(p,'yaw',{kind:'n',step:.5,min:-360,max:360})),fld('Pitch °',num(p,'pitch',{kind:'n',step:.5,min:-90,max:90})),fld('Roll °',roll));
+  /* shift is limited to the published range for this body and lens where we know it; trying to go past it flashes the alert */
+  const ss=shiftSpec(m,lens),vr=ss?ss.v:[-150,150],hr=ss?ss.hr:[-100,100];
+  const shV=num(p,'shiftV',{kind:'n',step:1,min:vr[0],max:vr[1],onClamp:()=>flashShift(p),after:()=>{if(clampShift(p,'v')){shV.value=p.shiftV;flashShift(p);}}}),
+    shH=num(p,'shiftH',{kind:'n',step:1,min:hr[0],max:hr[1],onClamp:()=>flashShift(p),after:()=>{if(clampShift(p,'h')){shH.value=p.shiftH;flashShift(p);}}});if(ss){shV.disabled=!!ss.fixed;shH.disabled=!ss.h;}
   const rng=ss?(ss.fixed?' (fixed)':` (${+vr[0].toFixed(1)} to ${+vr[1].toFixed(1)})`):'';
-  g2.append(fld('Lens shift V %'+rng,shV),fld('Lens shift H %'+(ss?(ss.h?` (±${ss.h})`:' (none)'):''),shH),fld('Light output %',num(p,'out',{kind:'n',step:1,min:1,max:100})));
+  g2.append(fld('Lens shift V %'+rng,shV),fld('Lens shift H %'+(ss?(ss.h?` (${hRange(ss).replace(/%/g,'')})`:' (none)'):''),shH),fld('Light output %',num(p,'out',{kind:'n',step:1,min:1,max:100})));
   pos.append(g2);
   if(ss&&ss.fixed)pos.append(el('p','note',`Fixed lens offset${m.off!=null?` (${m.off}% projection offset)`:''}: the image centre sits ${ss.base}% of the image height above the lens axis (below it when hung upside down). There is no lens shift: “Place level for target” positions it the way it would be installed, while “Aim at target” tilts it instead (which adds keystone).`));
-  else if(ss)pos.append(el('p','note',`Lens shift range: V ${ss.v[0]}% to ${ss.v[1]}%${ss.h?`, H ±${ss.h}%`:', no horizontal shift'}. V is where the image centre sits above the lens axis, in % of image height (0 = centred).`));
-  pos.append(el('p','note','Yaw 0° points toward the front (−Z). Pitch is positive upward; −90° points straight down for floor projection. Roll 180° for an inverted ceiling hang, 90° for portrait. Lens shift is in % of image height / width; check your lens’s actual shift range.'));
+  else if(ss)pos.append(el('p','note',`Lens shift range: V ${ss.v[0]}% to ${ss.v[1]}%${ss.h?`, H ${hRange(ss)}`:', no horizontal shift'}${(ss.env==='diamond'||ss.circ)&&ss.h?`. V and H share one range${ss.circ?' (the image corners must stay inside the lens’s image circle)':''}: using H reduces the V available, and the other way round`:''}${m.mfr==='Christie'&&ss.h?'. Christie lists each axis with the other centred, so using both at full stretch may not be possible':''}. V is where the image centre sits above the lens axis, in % of image height (0 = centred).`));
+  else pos.append(el('p','note','This lens’s shift range isn’t in the catalog, so shift isn’t limited. Check the lens spec.'));
+  const sm=el('div','shiftmeter');sm.dataset.ro='pshift';pos.append(sm);
+  const yn=v=>v===false?'<span class="bad">no</span>':v?'<span class="ok">yes</span>':'not listed';
+  pos.append(el('p','note',o?`Mounting for the ${esc(m.name)}: ceiling ${yn(o.ceil)} · portrait ${yn(o.port)} · ${o.free?'any tilt (360°)':o.tilt===0?'no tilt':o.tilt!=null?`tilt up to ±${o.tilt}°`:'tilt limits not listed'}${o.roll!=null?` · side tilt ±${o.roll}°`:''}${o.note?'. '+esc(o.note):''}${o.est?' (estimated)':''}.`:`Mounting limits for the ${esc(m.name)} aren’t in the catalog; check the maker’s manual before hanging it upside down or on its side.`));
+  pos.append(el('p','note','Auto mounting turns the projector portrait for a tall target and hangs it upside down when its lens is above the image, if this model allows it; it re-checks when you move the projector or use Fit to target. Yaw 0° points toward the front (−Z). Pitch is positive upward; −90° points straight down for floor projection. Roll fine-tunes the mount.'));
   const g3=el('div','grid2');
   g3.append(fld('Content aspect',sel(p,'content',[['native','Native chip'],['1.78','16:9'],['1.6','16:10'],['1.33','4:3'],['1.85','1.85:1 flat'],['2.39','2.39:1 scope'],['1','1:1'],['0.5625','9:16 portrait'],['3.56','32:9']],{})),
     fld('Target surface',sel(p,'target',[['auto','Whatever the beam hits'],...S.screens.map(s=>[s.id,s.name])],{})));
@@ -1482,14 +1616,15 @@ function lensSuggest(p,s){const m=modelOf(p),dist=screenWorld(s,.5,.5).p.distanc
 function targetScreen(p){if(p.target!=='auto'){const s=S.screens.find(s=>s.id===p.target);if(s)return s;}const st=stats.proj[p.id];if(st&&st.tgt&&st.tgt.kind==='screen')return st.tgt.ref;return S.screens[0]||null;}
 function fitProj(p,mode){
   const s=targetScreen(p);if(!s){toast('Add a screen first');return;}
+  if(p.autoMount)applyAutoMount(p,true);
   const c=screenWorld(s,.5,.5).p;
   /* place: level and square to the target, at the distance that fills it and the height its offset needs (how ST / UST units are installed) */
   if(mode==='place'){const n=screenWorld(s,.5,.5).n;const nh=V(n.x,0,n.z);if(nh.lengthSq()<1e-6){toast('The target faces up or down. Use “Aim at target” instead.');return;}nh.normalize();
     const L0=lensPos(p);if(L0.clone().sub(c).dot(nh)<0)nh.negate();
     p.yaw=+(Math.atan2(nh.x,nh.z)/D2R).toFixed(2);p.pitch=0;p.shiftH=0;p.shiftV=restShift(modelOf(p),lensOf(p));
-    const q=prep().find(x=>x.p===p);const D=Math.max(chordOf(s)/q.Wc,chordHOf(s)/q.Hc);const L=c.clone().addScaledVector(nh,D);L.y=c.y-q.cy*D*Math.cos(p.roll*D2R);
+    const q=prep().find(x=>x.p===p);const D=Math.max(chordOf(s)/q.Wc,chordHOf(s)/q.Hc);const B=projBasis(p);const L=c.clone().addScaledVector(nh,D).addScaledVector(B.r,-q.cx*D).addScaledVector(B.u,-q.cy*D);
     p.x=+L.x.toFixed(3);p.z=+L.z.toFixed(3);p.h=+(L.y-baseAt(L.x,L.z,p.lvl)).toFixed(3);
-    if(p.h<0)toast(`Level, ${p.name} would need its lens ${fmtLen(-p.h)} below the floor. Hang it upside down (roll 180°) or use a smaller image.`);
+    if(p.h<0)toast(`Level, ${p.name} would need its lens ${fmtLen(-p.h)} below the floor. ${mountOK(orientOf(modelOf(p)),'ceiling')?'Set Mounting to Ceiling':'Pick a projector that can hang upside down'} or use a smaller image.`);
     changed('obj');render();return;}
   if(mode==='aim'||mode==='fill'||mode==='fit'||mode==='move'){const L=lensPos(p);const d=c.clone().sub(L);p.yaw=+(Math.atan2(-d.x,-d.z)/D2R).toFixed(2);p.pitch=+(Math.atan2(d.y,Math.hypot(d.x,d.z))/D2R).toFixed(2);const ss=shiftSpec(modelOf(p),lensOf(p));p.shiftV=ss?clamp(0,ss.v[0],ss.v[1]):0;p.shiftH=0;}
   if(mode!=='aim'){
@@ -1499,7 +1634,7 @@ function fitProj(p,mode){
     else{const tr=dist/(mode==='fill'?qf:qi);const [a,b]=lensRange(p);if(b>a)p.zoom=clamp((tr-a)/(b-a),0,1);if(tr<a-1e-3||tr>b+1e-3)toast(`Needs throw ratio ${tr.toFixed(2)}:1; this lens covers ${a}–${b}:1. See lens suggestions below.`);}
   }
   /* an offset the lens can't shift away throws the image centre off the lens axis: tilt so the centre, not the axis, lands on the target */
-  if(p.shiftV&&mode!=='move'){const q=prep().find(x=>x.p===p);p.pitch=+(p.pitch-Math.atan(q.cy)/D2R*Math.cos(p.roll*D2R)).toFixed(2);}
+  if(p.shiftV&&mode!=='move'){const q=prep().find(x=>x.p===p),t=Math.atan(q.cy)/D2R;p.pitch=+(p.pitch-t*Math.cos(p.roll*D2R)).toFixed(2);p.yaw=+(p.yaw-t*Math.sin(p.roll*D2R)).toFixed(2);}
   changed('obj');render();
 }
 
@@ -1633,10 +1768,16 @@ function projWarnings(p){
   if(!st.hit)out.push({lvl:'bad',t:`${p.name}: the beam centre hits nothing. Aim it at a surface.`});
   if(st.keystone!=null&&st.keystone>20)out.push({lvl:'warn',t:`${p.name} meets its surface ${st.keystone.toFixed(0)}° off-axis. Expect keystone/warp correction and uneven brightness.`});
   const ss=shiftSpec(q.m,q.lens);
-  if(ss){const e=.05;if(p.shiftV<ss.v[0]-e||p.shiftV>ss.v[1]+e||Math.abs(p.shiftH)>ss.h+e)out.push({lvl:ss.fixed?'bad':'warn',t:ss.fixed?`${p.name}: the ${q.m.name} has a fixed lens offset and no lens shift. Set shift V to ${ss.base}% and H to 0%, or pick the model again.`:`${p.name}: lens shift V ${p.shiftV}% / H ${p.shiftH}% is outside this lens's range of V ${ss.v[0]}% to ${ss.v[1]}%, H ±${ss.h}%.`});}
+  if(ss){if(shiftUse(ss,p.shiftV,p.shiftH).f>1.005)out.push({lvl:ss.fixed?'bad':'warn',t:ss.fixed?`${p.name}: the ${q.m.name} has a fixed lens offset and no lens shift. Set shift V to ${ss.base}% and H to 0%, or pick the model again.`:`${p.name}: lens shift V ${p.shiftV}% / H ${p.shiftH}% is outside this lens's range of V ${ss.v[0]}% to ${ss.v[1]}%, H ${hRange(ss)}${ss.env==='diamond'||ss.circ?' (V and H share one range)':''}.`});}
   else if(Math.abs(p.shiftV)>60||Math.abs(p.shiftH)>30)out.push({lvl:'warn',t:`${p.name}: lens shift V ${p.shiftV}% / H ${p.shiftH}% is beyond what many zoom lenses allow. Check the lens spec.`});
+  const o=orientOf(q.m),mk=mountOf(p);
+  if(o){if(mk==='ceiling'&&o.ceil===false)out.push({lvl:'bad',t:`${p.name}: the ${q.m.name} can't be mounted upside down. Set Mounting to Table / floor or pick another projector.`});
+    if(isPortrait(mk)&&o.port===false)out.push({lvl:'bad',t:`${p.name}: the ${q.m.name} isn't rated for portrait (on its side). Set Mounting to landscape or pick another projector.`});
+    const trim=wrap180((+p.roll||0)-MOUNTS.find(x=>x[0]===mk)[2]);
+    if(o.roll!=null&&Math.abs(trim)>o.roll+.25)out.push({lvl:'bad',t:`${p.name} is rolled ${Math.abs(trim).toFixed(1)}° off ${isPortrait(mk)?'its side':'level'}; the ${q.m.name} allows ±${o.roll}° side to side.`});
+    if(!o.free&&o.tilt!=null&&Math.abs(p.pitch)>o.tilt+.25)out.push({lvl:'bad',t:`${p.name} is tilted ${Math.abs(p.pitch).toFixed(1)}° ${p.pitch<0?'down':'up'}; the ${q.m.name} is only rated for ±${o.tilt}°.${o.note?' '+o.note:''}`});}
   if(q.m.unc)out.push({lvl:'warn',t:`${p.name}: specs for the ${q.m.name} come from a partial or dealer listing. Confirm them with the maker.`});
-  if(q.lens.big&&modelOf(p).noBig)out.push({lvl:'bad',t:`${p.name}: this lens is not listed for the ${q.m.name}.`});
+  if(q.lens.no&&q.lens.no.some(k=>bodyKeys(q.m).includes(k)))out.push({lvl:'bad',t:`${p.name}: this lens is not listed for the ${q.m.name}.`});
   if(q.lens.est)out.push({lvl:'warn',t:`${p.name}: the ${q.lens.name} ratio on this chip is estimated from neighbouring lenses.`});
   return out;
 }
@@ -1712,13 +1853,39 @@ function renderCatalog(){
   s.append(el('p','note','Lumen figures are the published class ratings as best known (✓ = checked against the current spec sheet). Christie and Barco quote ISO, ANSI and centre lumens differently; BenQ figures are ANSI lumens from BenQ’s spec pages. Most BenQ models have a built-in lens with a fixed projection offset, shown in the Lenses column. Model lists change. Choose “Custom projector…” for anything missing, such as cinema, legacy or rental-specific models.'));
   panel.append(s);
   Object.values(FAM).filter(fm=>!fm.fixed).forEach(fm=>{const s2=sec(fm.name);s2.append(el('p','note','Source: '+esc(fm.src)));const t=el('div','tblwrap');let h='<table><thead><tr><th>Lens</th><th>Throw ratio</th><th>Notes</th></tr></thead><tbody>';
-    fm.lenses.forEach(l=>{const r=l.tr?Object.entries(l.tr).map(([k,v])=>`${k} ${v[0]===v[1]?v[0]:v[0]+'–'+v[1]}`).join(' · '):(l.min===l.max?l.min:l.min+'–'+l.max)+':1';h+=`<tr><td>${esc(l.name)}</td><td class="mono">${r}</td><td>${esc([l.note,l.big?'Griffyn 4K35/50 only within Griffyn':'',l.est?'estimated':''].filter(Boolean).join('; '))}</td></tr>`;});
+    const CLS_NAME={LAMP:'xenon D4K / Mirage 4K / Roadie',BOX:'Boxer / Mirage 304K',RGB40:'D4K40 / Mirage 4K40-RGB',HS13WU:'D13WU-HS',HS13HD:'D13HD-HS',GSO:'DWU1075 / DWU850-GS',GSOHD:'DHD1075 / DHD850-GS',GS599:'DWU599-GS',GS599HD:'DHD599-GS',CRHD:'Crimson HD',CRWU:'Crimson WU'};
+    const TRK={WU:'WUXGA',WQ:'WQXGA',N4K:'native 4K',F4K:'F70/F90 4K',FW:'F70/F90 WUXGA',F80:'F80',HS4K:'4K-HS'};
+    const sht=l=>{const sv=l.sv!=null?l.sv:fm.sv,sh=l.sh!=null?l.sh:fm.sh;if(!sv)return '—';const H=Array.isArray(sh)?`${sh[0]} to +${sh[1]}`:`±${sh||0}`;
+      return `V ${sv[0]} to ${sv[1]>0?'+':''}${sv[1]} · H ${H}`+(l.by||fm.by?' *':'');};
+    h=h.replace('<th>Notes</th>','<th>Shift % (default)</th><th>Notes</th>');
+    fm.lenses.forEach(l=>{const r=l.tr?Object.entries(l.tr).map(([k,v])=>`${TRK[k]||k} ${v[0]===v[1]?v[0]:v[0]+'–'+v[1]}`).join(' · '):(l.min===l.max?l.min:l.min+'–'+l.max)+':1';h+=`<tr><td>${esc(l.name)}</td><td class="mono">${r}</td><td class="mono">${sht(l)}</td><td>${esc([l.note,l.no?'Not for the '+l.no.map(k=>CLS_NAME[k]||k).join(', '):'',l.est?'estimated':''].filter(Boolean).join('; '))}</td></tr>`;});
+    if(fm.lenses.some(l=>l.by)||fm.by)h+=`<tr><td colspan="4" class="note">* differs on some bodies; the projector panel shows the range for the body you pick.</td></tr>`;
     t.innerHTML=h+'</tbody></table>';s2.append(t);panel.append(s2);});
 }
 
 /* ---------- live readouts ---------- */
 function setRO(k,html){document.querySelectorAll(`[data-ro="${k}"]`).forEach(e=>e.innerHTML=html);}
+/* ---------- lens shift limit: a banner over the 3D view while any projector is at (or past) the edge of its shift range ---------- */
+function shiftState(p){const ss=shiftSpec(modelOf(p),lensOf(p));if(!ss||ss.fixed)return null;const u=shiftUse(ss,p.shiftV,p.shiftH);return {ss,...u,max:u.f>=.995,over:u.f>1.005};}
+const pctS=v=>(v>0?'+':'')+(+(+v).toFixed(1))+'%';
+function shiftMsg(p,st){const {ss}=st,ax=[];
+  if(ss.env==='diamond'&&st.fv>0&&st.fh>0)return `${esc(p.name)}: V ${pctS(p.shiftV)} with H ${pctS(p.shiftH)} ${st.over?'is past':'uses all of'} this lens’s combined shift range`;
+  if(st.fv>=.995)ax.push(`V ${pctS(p.shiftV)} (range ${pctS(ss.v[0])} to ${pctS(ss.v[1])})`);if(st.fh>=.995)ax.push(`H ${pctS(p.shiftH)} (range ${hRange(ss)})`);
+  if(!ax.length)return `${esc(p.name)}: V ${pctS(p.shiftV)} with H ${pctS(p.shiftH)} ${st.over?'pushes':'puts'} the image corners ${st.over?'outside':'at the edge of'} the lens’s image circle`;
+  return `${esc(p.name)}: ${st.over?'past the limit':'at the limit'}, ${ax.join(' and ')}`;}
+let shiftFlash=false;
+function flashShift(){shiftFlash=true;}
+function updateShiftAlert(){const box=$('#shiftAlert');const hits=[];
+  S.projectors.forEach(p=>{const st=shiftState(p),hit=a=>!!st&&st.max&&(st.ss.env==='diamond'?a>0:a>=.995||st.fc>=.995&&a>0);if(st&&st.max)hits.push({p,st});
+    const fv=$('#f-'+p.id+'-shiftV'),fh=$('#f-'+p.id+'-shiftH');if(fv)fv.classList.toggle('atmax',hit(st&&st.fv));if(fh)fh.classList.toggle('atmax',hit(st&&st.fh));});
+  box.hidden=!hits.length;box.classList.toggle('over',hits.some(x=>x.st.over));
+  if(hits.length)box.innerHTML=`<div><b>${hits.some(x=>x.st.over)?'Beyond lens shift range':'Max lens shift'}</b></div>`+hits.slice(0,3).map(x=>`<div>${shiftMsg(x.p,x.st)}</div>`).join('')+(hits.length>3?`<div>+ ${hits.length-3} more projectors</div>`:'');
+  if(shiftFlash){shiftFlash=false;if(hits.length){box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}}}
+function shiftMeter(p){const st=shiftState(p);if(!st)return '';const row=(t,f,val)=>{const w=Math.min(1,isFinite(f)?f:1),c=f>1.005?'bad':f>=.995?'warn':'';
+    return `<span>${t}</span><i><b class="${c}" style="width:${(w*100).toFixed(0)}%"></b></i><em>${isFinite(f)?Math.round(f*100):'—'}%${f>=.995?' · max':''}</em>`;};
+  return st.ss.env==='diamond'&&st.ss.h?row('Shift used (V + H)',st.f):row('V shift used',st.fv)+(st.ss.h?row('H shift used',st.fh):'')+(st.ss.circ&&st.ss.h?row('Image circle used',st.fc):'');}
 function updateReadouts(){
+  updateShiftAlert();
   S.projectors.forEach(p=>{const st=stats.proj[p.id];if(!st)return;setRO('plist-'+p.id,st.tgt?`${fmtL(st.avg,st.tgt.gain)}<br>${st.q.tr.toFixed(2)}:1`:`${st.q.tr.toFixed(2)}:1`);});
   S.screens.forEach(x=>{const st=stats.scr[x.id];if(!st)return;setRO('slist-'+x.id,`${fmtL(st.avg,x.gain)}<br>${pct(st.cov)} lit`);});
   S.people.forEach((h,i)=>{let n=0;S.screens.forEach(x=>{const st=stats.scr[x.id];if(st&&st.shadowBy&&st.shadowBy[i]>0)n++;});const inBeam=stats.warn.some(w=>w.t.startsWith(personLabel(h,i)+' '));setRO('hlist-'+h.id,(n?`<span class="bad">shadow ×${n}</span>`:'<span class="ok">clear</span>')+(inBeam?'<br><span class="bad">in beam</span>':''));});
@@ -1736,6 +1903,7 @@ function updateReadouts(){
     setRO('pread',`<dt>Throw distance</dt><dd>${fmtLen(d)}</dd><dt>Image at throw</dt><dd>${d?fmtLen(q.Wc*d)+' × '+fmtLen(q.Hc*d):'—'}</dd><dt>Image diagonal</dt><dd>${d?fmtLen(Math.hypot(q.Wc,q.Hc)*d):'—'}</dd><dt>Effective lumens</dt><dd>${Math.round(q.lm).toLocaleString()} lm</dd><dt>Lumens on content</dt><dd>${Math.round(q.lmContent).toLocaleString()} lm</dd><dt>Lands on</dt><dd>${st.tgt?esc(st.tgt.label):'nothing'}</dd><dt>Average on it</dt><dd>${st.tgt?fmtL(st.avg,st.tgt.gain):'—'}</dd><dt>Off-axis angle</dt><dd>${st.keystone!=null?st.keystone.toFixed(1)+'°':'—'}</dd>${fitTxt}`);
     {const lf=q.lens.lm||1;const parts=[`× ${S.derate}% lumen derate (Venue → Light & planning) for ageing and real-world output`];if(lf!==1)parts.push(`× ${Math.round(lf*100)}% for this lens`);if(+p.out!==100)parts.push(`× ${p.out}% light output`);
       setRO('plm',`Brightness is calculated from ${Math.round(q.lm).toLocaleString()} lm, not the ${(+q.m.lm).toLocaleString()} lm spec: ${parts.join(', ')}.`);}
+    setRO('pshift',shiftMeter(p));
     const ws=projWarnings(p).concat(stats.warn.filter(w=>w.t.includes(' '+p.name+' ')));setRO('pwarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));
     if(s)setRO('psug',lensSuggest(p,s));else setRO('psug','');
   }
@@ -1785,7 +1953,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{
 renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;setMouse(e);const gp=V();if(!ray.ray.intersectPlane(drag.plane,gp))return;const {W,L}=siteDims();const pad=S.mode==='outdoor'?50:S.mode==='model'?20:0;
   drag.obj.x=+clamp(gp.x+drag.ox,-pad,W+pad).toFixed(3);drag.obj.z=+clamp(gp.z+drag.oz,-pad,L+pad).toFixed(3);drag.moved=true;draft=true;
   if(drag.pk.kind==='scr'||drag.pk.kind==='rsr'){dirty.surf=true;}dirty.objs=true;dirty.compute=true;});
-const endDrag=()=>{if(!drag)return;const was=drag;drag=null;controls.enabled=camMode==='orbit'||camMode==='top';draft=false;if(was.moved){changed(was.pk.kind==='scr'||was.pk.kind==='rsr'?'surf':'obj');render();}};
+const endDrag=()=>{if(!drag)return;const was=drag;drag=null;controls.enabled=camMode==='orbit'||camMode==='top';draft=false;if(was.moved){if(was.pk.kind==='proj'&&was.obj.autoMount)applyAutoMount(was.obj);changed(was.pk.kind==='scr'||was.pk.kind==='rsr'?'surf':'obj');render();}};
 renderer.domElement.addEventListener('pointerup',endDrag);renderer.domElement.addEventListener('pointercancel',endDrag);
 let fastCam=true;try{fastCam=localStorage.getItem('throwline:fastcam')!=='0';}catch(e){}
 $('#fastBtn').setAttribute('aria-pressed',fastCam);
@@ -1795,6 +1963,24 @@ $('#beamBtn').addEventListener('click',()=>{S.beams=!S.beams;$('#beamBtn').setAt
 /* ---------- dimensions: floor-plan distances (square to screen faces, to walls) and height above the floor ---------- */
 /* reference points: projector = centre of the body, screen = centre of its bottom edge, riser = top centre, person = feet */
 function projBody(p){return modelOf(p).lm>=20000?[.75,.42,1.0]:[.5,.22,.55];}
+/* ---------- mounting: roll 0 upright, 180 ceiling, ±90 portrait (+90 turns the top to the left, seen from behind) ---------- */
+const MOUNTS=[['table','Table / floor (upright)',0],['ceiling','Ceiling (upside down)',180],['portL','Portrait, top to the left',90],['portR','Portrait, top to the right',-90]];
+const wrap180=a=>{a=((a+180)%360+360)%360-180;return a===-180?180:a;};
+function mountOf(p){const r=wrap180(+p.roll||0);return Math.abs(r)<=45?'table':Math.abs(r)>=135?'ceiling':r>0?'portL':'portR';}
+const isPortrait=k=>k==='portL'||k==='portR';
+function mountOK(o,k){return !o||(k==='ceiling'?o.ceil!==false:isPortrait(k)?o.port!==false:true);}
+/* switch mount but keep any small roll trim the user dialled in */
+function setMount(p,k){const cur=MOUNTS.find(x=>x[0]===mountOf(p))[2],to=MOUNTS.find(x=>x[0]===k)[2];p.roll=+wrap180(to+wrap180((+p.roll||0)-cur)).toFixed(2);}
+/* auto: portrait for a tall target, otherwise ceiling when the lens sits above the image centre; only mounts this body allows */
+function pickMount(p){const m=modelOf(p),o=orientOf(m),s=targetScreen(p);if(!s)return {k:mountOf(p)};
+  const c=screenWorld(s,.5,.5).p,L=lensPos(p),d=c.clone().sub(L);let note='';
+  if(chordHOf(s)>chordOf(s)*1.05&&m.rw>=m.rh){
+    /* turn the top toward the side the image sits on, so upward lens shift moves the image toward the screen */
+    const n=screenWorld(s,.5,.5).n,f=V(-n.x,0,-n.z);if(f.dot(d)<0)f.negate();const k=d.dot(V(-f.z,0,f.x))>.05?'portR':'portL';
+    if(mountOK(o,k))return {k};note=`The ${m.name} isn't rated for portrait, so ${p.name} stays landscape.`;}
+  const up=L.y>c.y+.05,k=up?'ceiling':'table';
+  if(mountOK(o,k))return {k,note};return {k:'table',note:note||`The ${m.name} can't hang upside down, so ${p.name} stays upright.`};}
+function applyAutoMount(p,quiet){const {k,note}=pickMount(p);if(k!==mountOf(p))setMount(p,k);if(note&&!quiet)toast(note);}
 function projCenter(p){return lensPos(p).addScaledVector(projBasis(p).f,-projBody(p)[2]/2);}
 /* the venue floor under a point: stage decks and risers are ignored */
 function floorY(x,z){if(S.mode==='theatre'){const g=thG();return Math.max(0,z-g.zA)*g.rake;}return S.mode==='indoor'?0:groundY(x,z);}
