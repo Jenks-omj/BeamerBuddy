@@ -194,6 +194,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button><button data-v="content">Content</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
         <button class="btn sm" id="beamBtn" aria-pressed="true">Beams</button>
+        <button class="btn sm" id="guideBtn" aria-pressed="false" title="Tape-measure guides: click a wall, screen or the floor and drag out a dotted guide line at a distance from it. Type a number while dragging for an exact distance, V for a vertical line, X to turn a floor guide, Esc to cancel.">Guide</button>
         <button class="btn sm" id="fastBtn" aria-pressed="true" title="While the camera moves: render at lower resolution and hide beams, image-edge outlines, model edges, dimensions and labels. Full detail returns when the camera stops.">Fast orbit</button>
         <div class="brk"></div>
         <div class="seg" id="distSeg" role="group" aria-label="Distances" title="Floor-plan dimensions, like a drafting top view: distance square to each screen face, to the walls around the object, and height above the floor. Projectors measure from the center of the body. Selected: everything for the selected object. All: height and screen distances for every projector, screen and riser."><button data-v="off">Dims off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
@@ -762,7 +763,7 @@ function thDefaults(){return {stageW:18,stageD:11,stageH:1.0,flyH:16,apron:1.8,a
   seatW:15,seatD:15,seatFront:2.5,rowPitch:.95,seatPitch:.55,bal:true,balH:5.5,balD:7,balRows:5,wallGain:.12,stageGain:.08,cycGain:.8};}
 function baseState(){return {name:'Untitled plan',units:'ft',mode:'indoor',room:{L:14,W:10,H:4.5,wallGain:.85,floorGain:.3,ceilGain:.8,walls:true,floor:true,ceil:true},
   site:{L:70,W:60,rise:1,run:12,dir:0,gain:.18},th:thDefaults(),model:modelDefaults(),ambient:1,derate:85,uniformity:90,target:100,quality:'fine',beams:true,dist:'off',view:'lum',lumUnit:'nits',
-  projectors:[],screens:[],people:[],risers:[],sel:null};}
+  projectors:[],screens:[],people:[],risers:[],guides:[],snap:true,sel:null};}
 
 /* ============================== GEOMETRY HELPERS ============================== */
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -818,7 +819,7 @@ const controls=new THREE.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;controls.dampingFactor=.12;
 scene.add(new THREE.HemisphereLight(0xffffff,0x444444,.9));
 const dl=new THREE.DirectionalLight(0xffffff,.5);dl.position.set(5,10,7);scene.add(dl);
-const G={surf:new THREE.Group(),objs:new THREE.Group(),beams:new THREE.Group(),aux:new THREE.Group(),outl:new THREE.Group()};
+const G={surf:new THREE.Group(),objs:new THREE.Group(),beams:new THREE.Group(),aux:new THREE.Group(),outl:new THREE.Group(),guides:new THREE.Group()};
 Object.values(G).forEach(g=>scene.add(g));
 let surfaces=[],pickables=[];
 function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888';}
@@ -1107,7 +1108,7 @@ function buildOccluders(){
 
 /* ---------- objects (projectors, people) ---------- */
 function buildObjects(){
-  disposeGroup(G.objs);pickables=pickables.filter(m=>m.userData.surfKey);
+  disposeGroup(G.objs);pickables=pickables.filter(m=>m.userData.surfKey);buildGuides();
   for(const p of S.projectors){
     const g=new THREE.Group();
     const [bw,bh,bd]=projBody(p);
@@ -1450,6 +1451,7 @@ function renderVenue(){
   s3.append(el('p','note',`Lumen derate scales every projector’s spec-sheet lumens before any brightness is calculated (${S.derate}% now), because installed projectors rarely reach their rated output once lamps or lasers age and colour is calibrated. 100% uses the raw spec figures.`));
   s3.append(el('p','note','Derate covers calibration, colour correction and laser/lamp ageing (80–85% is a common planning figure). Uniformity models the corner fall-off of the lens. Typical targets: 48 nits (14 fL) cinema in blackout, 80–150 nits gallery art, 200–400+ nits outdoors with ambient light.'));
   panel.append(s3);
+  renderGuides();
 }
 
 function fillSeats(where){
@@ -1746,6 +1748,9 @@ function renderPpl(){
 function renderReport(){
   const s=sec('Screens',[btn('Copy report',copyReport)]);const w=el('div','tblwrap');w.dataset.ro='rscr';s.append(w);panel.append(s);
   const s2=sec('Projectors');const w2=el('div','tblwrap');w2.dataset.ro='rproj';s2.append(w2);panel.append(s2);
+  if(S.guides.length){const sg=sec('Guides');const wg=el('div','tblwrap');
+    wg.innerHTML=`<table><thead><tr><th>Guide</th><th>Runs</th><th>Position</th></tr></thead><tbody>${S.guides.map(g=>`<tr><td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(g.color)};margin-right:6px"></span>${esc(g.name)}</td><td>${RUN_NAME[g.run]}</td><td>${esc(guideText(g))}</td></tr>`).join('')}</tbody></table>`;
+    sg.append(wg);panel.append(sg);}
   const s3=sec('Warnings');const w3=el('ul','msgs');w3.dataset.ro='rwarn';s3.append(w3);panel.append(s3);
   const s4=sec('How the numbers are made');s4.append(el('p','note',`Each surface point receives E = (lumens ÷ image area at 1 m) × cos(incidence) ÷ (axial distance² × cos(off-axis angle)), summed over every projector that reaches it without being blocked by a screen or a person. Luminance = E × gain ÷ π (nits); 1 fL = 3.426 nits. Lumens are spec values × lens factor × output % × derate. Contrast is (projected + ambient) ÷ ambient luminance. These are planning estimates: confirm lens choice and shift range with the Christie and Barco lens calculators before ordering.`));panel.append(s4);
 }
@@ -1796,6 +1801,7 @@ function copyReport(){
   S.screens.forEach(x=>{const st=stats.scr[x.id];if(st)lines.push(`- ${x.name}: ${fmtLen(x.w,2)} × ${fmtLen(x.h,2)}${x.type==='curved'?` ${x.convex?'convex':'curved'}${{h:'',v:' top–bottom',both:' dish'}[bendOf(x)]} R ${fmtLen(x.R)}`:''}, gain ${x.gain}; coverage ${pct(st.cov)}, avg ${fmtL(st.avg,x.gain)}, min ${fmtL(st.mn,x.gain)}, max ${fmtL(st.mx,x.gain)}, overlap ${pct(st.ov)}, shadowed ${pct(st.shd)}`);});
   lines.push('','PROJECTORS');
   S.projectors.forEach(p=>{const st=stats.proj[p.id];if(!st)return;const q=st.q;lines.push(`- ${p.name}: ${q.m.mfr} ${q.m.name}, ${q.lens.name} at ${q.tr.toFixed(2)}:1; position X ${fmtLen(p.x)} Z ${fmtLen(p.z)} H ${fmtLen(p.h)} yaw ${p.yaw}° pitch ${p.pitch}°; throw ${fmtLen(st.dist)}; lands on ${st.tgt?st.tgt.label:'nothing'}`);});
+  if(S.guides.length){lines.push('','GUIDES');S.guides.forEach(g=>lines.push(`- ${g.name}: ${RUN_NAME[g.run]}, ${guideText(g)}`));}
   lines.push('','WARNINGS');allWarnings().forEach(w=>lines.push('- '+w.t));
   copyText(lines.join('\n'));
 }
@@ -1942,7 +1948,7 @@ function setMouse(e){const r=renderer.domElement.getBoundingClientRect();mouse.x
 function groundPlane(){const s=slope(),d=S.site.dir*D2R;const {W,L}=siteDims();const n=V(-s*Math.sin(d),1,-s*Math.cos(d)).normalize();return new THREE.Plane().setFromNormalAndCoplanarPoint(n,V(W/2,0,L/2));}
 let drag=null;
 renderer.domElement.addEventListener('pointerdown',e=>{
-  if(camMode==='pov'||camMode==='person')return;setMouse(e);const hit=ray.intersectObjects(pickables,false)[0];if(!hit)return;
+  if(camMode==='pov'||camMode==='person')return;if(guideTool){guideDown(e);return;}setMouse(e);const hit=ray.intersectObjects(pickables,false)[0];if(!hit)return;
   const pk=hit.object.userData.pick;const arr=pk.kind==='proj'?S.projectors:pk.kind==='scr'?S.screens:pk.kind==='rsr'?S.risers:S.people;const obj=arr.find(o=>o.id===pk.id);if(!obj)return;
   const by=pk.kind==='proj'?baseAt(obj.x,obj.z,obj.lvl):pk.kind==='ppl'?personBase(obj):groundY(obj.x,obj.z);
   const plane=S.mode==='outdoor'?groundPlane():new THREE.Plane(V(0,1,0),-by);
@@ -1950,11 +1956,13 @@ renderer.domElement.addEventListener('pointerdown',e=>{
   drag={plane,pk,obj,ox:obj.x-gp.x,oz:obj.z-gp.z,moved:false,id:e.pointerId};controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);
   if(!S.sel||S.sel.id!==obj.id)select(pk.kind,obj.id);
 });
+renderer.domElement.addEventListener('pointermove',guideMove);
 renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;setMouse(e);const gp=V();if(!ray.ray.intersectPlane(drag.plane,gp))return;const {W,L}=siteDims();const pad=S.mode==='outdoor'?50:S.mode==='model'?20:0;
-  drag.obj.x=+clamp(gp.x+drag.ox,-pad,W+pad).toFixed(3);drag.obj.z=+clamp(gp.z+drag.oz,-pad,L+pad).toFixed(3);drag.moved=true;draft=true;
+  drag.obj.x=+clamp(gp.x+drag.ox,-pad,W+pad).toFixed(3);drag.obj.z=+clamp(gp.z+drag.oz,-pad,L+pad).toFixed(3);snapToGuides(drag.pk.kind,drag.obj,e.altKey);drag.moved=true;draft=true;
   if(drag.pk.kind==='scr'||drag.pk.kind==='rsr'){dirty.surf=true;}dirty.objs=true;dirty.compute=true;});
-const endDrag=()=>{if(!drag)return;const was=drag;drag=null;controls.enabled=camMode==='orbit'||camMode==='top';draft=false;if(was.moved){if(was.pk.kind==='proj'&&was.obj.autoMount)applyAutoMount(was.obj);changed(was.pk.kind==='scr'||was.pk.kind==='rsr'?'surf':'obj');render();}};
+const endDrag=()=>{guideUp();if(!drag)return;const was=drag;drag=null;guideSnap=null;controls.enabled=camMode==='orbit'||camMode==='top';draft=false;if(was.moved){if(was.pk.kind==='proj'&&was.obj.autoMount)applyAutoMount(was.obj);changed(was.pk.kind==='scr'||was.pk.kind==='rsr'?'surf':'obj');render();}};
 renderer.domElement.addEventListener('pointerup',endDrag);renderer.domElement.addEventListener('pointercancel',endDrag);
+$('#guideBtn').addEventListener('click',()=>setGuideTool(!guideTool));
 let fastCam=true;try{fastCam=localStorage.getItem('throwline:fastcam')!=='0';}catch(e){}
 $('#fastBtn').setAttribute('aria-pressed',fastCam);
 $('#fastBtn').addEventListener('click',()=>{fastCam=!fastCam;$('#fastBtn').setAttribute('aria-pressed',fastCam);try{localStorage.setItem('throwline:fastcam',fastCam?'1':'0');}catch(e){}});
@@ -2033,10 +2041,120 @@ function setDist(v){S.dist=v;document.querySelectorAll('#distSeg button').forEac
   if(v==='sel'&&!S.sel)toast('Select an object to measure from it');save();}
 document.querySelectorAll('#distSeg button').forEach(b=>b.addEventListener('click',()=>setDist(b.dataset.v)));
 
+/* ============================== GUIDES ============================== */
+/* dotted reference lines that run along one axis: run 'x' = across the room (pinned by depth z and height y), 'z' = front to back
+   (pinned by x and y), 'y' = vertical (pinned by x and z). Stored in world metres; refX / refZ pick the wall the panel measures from */
+const GUIDE_COLORS=['#3E8FD8','#E8873A','#3FB27F','#C55BC4','#D9C14A','#E05A5A'];
+const RUN_NAME={x:'across',z:'front to back',y:'vertical'};
+let guideSel=null,guideSnap=null,guideTool=false,gDrag=null;
+function wallNames(){return S.mode==='indoor'?{left:'left wall',right:'right wall',front:'front wall',back:'back wall'}
+  :S.mode==='theatre'?{left:'left side',right:'right side',front:'upstage wall',back:'house back wall'}:{left:'left edge',right:'right edge',front:'front edge',back:'back edge'};}
+function siteH(){return S.mode==='indoor'?S.room.H:S.mode==='theatre'?thG().H:S.mode==='model'&&MODELGEO?MODELGEO.size[1]:10;}
+function newGuide(run,over={}){const {W,L}=siteDims();
+  return Object.assign({id:uid('g'),name:'Guide '+(S.guides.length+1),run,x:+(W/2).toFixed(3),z:+(L/2).toFixed(3),y:2.4,refX:'left',refZ:'front',color:GUIDE_COLORS[S.guides.length%GUIDE_COLORS.length]},over);}
+/* the panel's value on one axis: distance from the chosen wall (x, z) or height (y) */
+function gFrom(g,ax){const {W,L}=siteDims();return ax==='x'?(g.refX==='right'?W-g.x:g.x):ax==='z'?(g.refZ==='back'?L-g.z:g.z):g.y;}
+function gSetFrom(g,ax,v){const {W,L}=siteDims();if(ax==='x')g.x=+(g.refX==='right'?W-v:v).toFixed(4);else if(ax==='z')g.z=+(g.refZ==='back'?L-v:v).toFixed(4);else g.y=+v.toFixed(4);}
+function guideText(g){const w=wallNames(),p=[];if(g.run!=='x')p.push(`${fmtLen(gFrom(g,'x'))} from ${w[g.refX]}`);
+  if(g.run!=='z')p.push(`${fmtLen(gFrom(g,'z'))} from ${w[g.refZ]}`);if(g.run!=='y')p.push(Math.abs(g.y)<.005?'on the floor':`${fmtLen(g.y)} high`);return p.join(', ');}
+function guideEnds(g){const {W,L}=siteDims(),pad=S.mode==='outdoor'||S.mode==='model'?2:0;
+  if(g.run==='x')return [V(-pad,g.y,g.z),V(W+pad,g.y,g.z)];if(g.run==='z')return [V(g.x,g.y,-pad),V(g.x,g.y,L+pad)];
+  return [V(g.x,groundY(g.x,g.z),g.z),V(g.x,Math.max(siteH(),groundY(g.x,g.z)+1),g.z)];}
+function guideLine(a,b,color,opacity,solid){const m=solid?new THREE.LineBasicMaterial({color,transparent:true,opacity,depthTest:false})
+    :new THREE.LineDashedMaterial({color,dashSize:.3,gapSize:.18,transparent:true,opacity,depthTest:false});
+  const l=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([a,b]),m);if(!solid)l.computeLineDistances();l.renderOrder=9;l.frustumCulled=false;return l;}
+function buildGuides(){disposeGroup(G.guides);
+  (S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),hi=g.id===guideSel||g.id===guideSnap;G.guides.add(guideLine(a,b,new THREE.Color(g.color),hi?1:.7));});
+  if(gDrag&&gDrag.g){const [a,b]=guideEnds(gDrag.g);G.guides.add(guideLine(a,b,TC['--accent'],1));G.guides.add(guideLine(gDrag.P,gDrag.P.clone().addScaledVector(gDrag.a,gDrag.t),TC['--accent'],1,true));}}
+/* a label on each guide, at the point nearest the orbit target, plus the live tape-measure readout while dragging one out */
+function guideLabels(items){
+  (S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),d=b.clone().sub(a),k=clamp(controls.target.clone().sub(a).dot(d)/Math.max(1e-9,d.lengthSq()),.04,.96);
+    items.push({id:'g:'+g.id,dist:true,pos:a.clone().addScaledVector(d,k),h:`<i class="d">${esc(g.name)}</i>${esc(guideText(g))}`});});
+  if(gDrag&&gDrag.g)items.push({id:'g:drag',dist:true,pos:gDrag.P.clone().addScaledVector(gDrag.a,gDrag.t/2),h:`<i class="d">${esc(gDrag.from)}</i>${gDrag.typed?esc(gDrag.typed)+' '+S.units+' ↵':fmtLen(gDrag.t)}`});}
+function addGuide(run,over){const g=newGuide(run,over);S.guides.push(g);guideSel=g.id;changed('obj');if(tab!=='venue')setTab('venue');else render();return g;}
+
+/* ---------- tape-measure tool: click a wall / screen / floor, drag away from it, release (or click again) to drop a guide ---------- */
+const GUIDE_HINT='Guide: click a wall, screen or the floor and drag out a guide · type a distance + Enter for an exact one · V vertical · X turn · Esc cancel';
+function setGuideTool(on){guideTool=on;$('#guideBtn').setAttribute('aria-pressed',on?'true':'false');renderer.domElement.style.cursor=on?'crosshair':'';
+  if(!on)cancelGuide();$('#hint').textContent=on?GUIDE_HINT:'Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster';}
+/* what a click hit: the axis the guide's offset grows along (unit vector into the room) and the default run direction */
+function guideStart(hit,viewDir){const {W,L}=siteDims(),n=hit.n.clone();if(n.dot(viewDir)>0)n.negate();
+  const ax=Math.abs(n.y)>=Math.max(Math.abs(n.x),Math.abs(n.z))?'y':Math.abs(n.x)>=Math.abs(n.z)?'x':'z';
+  const a=V(ax==='x'?Math.sign(n.x)||1:0,ax==='y'?Math.sign(n.y)||1:0,ax==='z'?Math.sign(n.z)||1:0),P=hit.point.clone();P[ax]=+P[ax].toFixed(4);
+  const w=wallNames(),run=ax==='y'?(Math.abs(viewDir.x)>Math.abs(viewDir.z)?'z':'x'):ax==='x'?'z':'x';
+  const from=ax==='x'?w[P.x<W/2?'left':'right']:ax==='z'?(String(hit.key||'').startsWith('scr:')?'screen':w[P.z<L/2?'front':'back']):(a.y>0?'floor':'ceiling');
+  return {P,a,ax,run,t:0,typed:'',from,refX:P.x<W/2?'left':'right',refZ:P.z<L/2?'front':'back',moved:false,sx:0,sy:0};}
+/* the guide the tool would drop now: pinned at the click point, moved t along the offset axis */
+function guideFromDrag(d){const Q=d.P.clone().addScaledVector(d.a,d.t);
+  return {id:'drag',name:'',run:d.run,x:+Q.x.toFixed(4),z:+Q.z.toFixed(4),y:+Q.y.toFixed(4),refX:d.refX,refZ:d.refZ,color:'#000'};}
+/* pick only faces you can see (walls are one-sided, so a ceiling seen from above is skipped) */
+function guideDown(e){setMouse(e);const hit=castRay(ray.ray.origin,ray.ray.direction,surfaces.filter(s=>!s.isModel).map(s=>s.mesh));
+  if(gDrag){commitGuide();return;}/* second click of click-move-click */
+  if(!hit){toast('Click a wall, screen or the floor to measure from it.');return;}
+  gDrag=guideStart(hit,ray.ray.direction);gDrag.sx=e.clientX;gDrag.sy=e.clientY;gDrag.g=guideFromDrag(gDrag);
+  controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);buildGuides();}
+function guideMove(e){if(!gDrag)return;setMouse(e);if(Math.hypot(e.clientX-gDrag.sx,e.clientY-gDrag.sy)>4)gDrag.moved=true;if(gDrag.typed)return;
+  /* intersect the mouse ray with the plane through the offset axis that faces the camera, then read the distance along the axis */
+  const a=gDrag.a,cd=ray.ray.direction,m=cd.clone().sub(a.clone().multiplyScalar(cd.dot(a)));if(m.lengthSq()<1e-6)return;
+  const Q=V();if(!ray.ray.intersectPlane(new THREE.Plane().setFromNormalAndCoplanarPoint(m.normalize(),gDrag.P),Q))return;
+  const st=S.units==='ft'?1/12/FT:.01;gDrag.t=Math.max(0,Math.round(Q.clone().sub(gDrag.P).dot(a)/st)*st);gDrag.g=guideFromDrag(gDrag);buildGuides();}
+function guideUp(){if(!gDrag)return;if(gDrag.moved&&!gDrag.typed)commitGuide();/* a plain click leaves it following the mouse until the next click */}
+function commitGuide(){const d=gDrag;if(!d)return;gDrag=null;controls.enabled=camMode==='orbit'||camMode==='top';
+  if(d.t<=0&&!d.typed){buildGuides();return;}const g=d.g;
+  addGuide(g.run,{x:g.x,z:g.z,y:g.y,refX:g.refX,refZ:g.refZ,name:`Guide ${S.guides.length+1} (${fmtLen(d.t)} from ${d.from})`});}
+function cancelGuide(){if(!gDrag)return;gDrag=null;controls.enabled=camMode==='orbit'||camMode==='top';buildGuides();}
+window.addEventListener('keydown',e=>{if(!guideTool||typing(e))return;
+  if(e.key==='Escape'){if(gDrag)cancelGuide();else setGuideTool(false);e.preventDefault();return;}
+  if(!gDrag)return;const k=e.key.toLowerCase();
+  if(k==='v'&&gDrag.ax!=='y'){gDrag.run=gDrag.run==='y'?(gDrag.ax==='x'?'z':'x'):'y';}
+  else if(k==='x'&&gDrag.ax==='y'){gDrag.run=gDrag.run==='x'?'z':'x';}
+  else if(/^[0-9.]$/.test(e.key)){gDrag.typed+=e.key;}
+  else if(e.key==='Backspace'){gDrag.typed=gDrag.typed.slice(0,-1);}
+  else if(e.key==='Enter'){const v=parseFloat(gDrag.typed);if(isFinite(v)&&v>=0){gDrag.t=fromD(v);gDrag.g=guideFromDrag(gDrag);gDrag.typed='';commitGuide();}e.preventDefault();return;}
+  else return;
+  e.preventDefault();e.stopImmediatePropagation();gDrag.g=guideFromDrag(gDrag);buildGuides();},true);
+
+/* ---------- snapping: a dragged object's floor position locks onto guides near it ---------- */
+function objSpan(kind,o){if(kind==='proj'){const y=lensPos(o).y;return [y-.6,y+.6];}
+  if(kind==='scr'){const b=groundY(o.x,o.z)+o.elev;return [b,b+o.h];}if(kind==='rsr'){const b=groundY(o.x,o.z);return [b,b+o.h];}
+  const b=personBase(o);return [b,b+personH(o)];}
+function snapToGuides(kind,o,alt){guideSnap=null;if(!S.snap||alt||!S.guides.length)return;const {W,L}=siteDims(),tol=clamp(Math.max(W,L)*.015,.1,.5),[lo,hi]=objSpan(kind,o);
+  let bx=null,bz=null;
+  for(const g of S.guides){if(g.run!=='y'&&(g.y<lo-1||g.y>hi+1))continue;
+    if(g.run!=='x'){const d=Math.abs(o.x-g.x);if(d<tol&&(!bx||d<bx.d))bx={d,v:g.x,id:g.id};}
+    if(g.run!=='z'){const d=Math.abs(o.z-g.z);if(d<tol&&(!bz||d<bz.d))bz={d,v:g.z,id:g.id};}}
+  if(bx){o.x=bx.v;guideSnap=bx.id;}if(bz){o.z=bz.v;guideSnap=bz.id;}}
+
+/* ---------- panel: Venue → Guides ---------- */
+function renderGuides(){const w=wallNames();
+  const s=sec('Guides',[btn('+ Across',()=>addGuide('x')),btn('+ Front–back',()=>addGuide('z')),btn('+ Vertical',()=>addGuide('y'))]);
+  s.append(el('p','note','Dotted reference lines at set distances from the walls, like guides in Photoshop or SketchUp. Add one here, or turn on Guide in the 3D view and drag one out from a wall, screen or the floor. Dragged projectors, screens, risers and people snap to nearby guides (hold Alt to drag without snapping).'));
+  const list=el('div','list');
+  S.guides.forEach(g=>{const it=el('button','item');it.type='button';it.setAttribute('aria-current',g.id===guideSel?'true':'false');const d=el('span','dot');d.style.background=g.color;
+    const mid=el('div');mid.style.minWidth='0';mid.append(el('div','nm',esc(g.name)),el('div','sub',esc(RUN_NAME[g.run]+' · '+guideText(g))));
+    it.append(d,mid,el('div','ro'));it.addEventListener('click',()=>{guideSel=g.id===guideSel?null:g.id;buildGuides();render();});list.append(it);});
+  if(!S.guides.length)list.append(el('p','note','No guides yet.'));
+  s.append(list,chk(S,'snap','Snap dragged objects to guides',{on:'none'}));panel.append(s);
+  const g=S.guides.find(x=>x.id===guideSel);if(!g)return;
+  const e=sec(g.name,[btn('Duplicate',()=>{const c={...g,id:uid('g'),name:g.name+' copy'};S.guides.push(c);guideSel=c.id;changed('obj');render();}),
+    btn('Delete',()=>{S.guides=S.guides.filter(x=>x!==g);guideSel=null;changed('obj');render();},'btn sm danger')]);
+  const gr=el('div','grid2');
+  const nm=el('input');nm.type='text';nm.id='f-'+g.id+'-name';nm.value=g.name;nm.addEventListener('input',()=>{g.name=nm.value;changed();});
+  const cl=el('input');cl.type='color';cl.id='f-'+g.id+'-color';cl.value=g.color;cl.style.height='28px';cl.addEventListener('input',()=>{g.color=cl.value;changed('obj');});
+  gr.append(fld('Name',nm),fld('Colour',cl),fld('Runs',sel(g,'run',[['x','Across the room'],['z','Front to back'],['y','Vertical (floor to ceiling)']],{on:'obj',after:render}),{wide:true}));
+  /* each pinned value is edited as a distance from the chosen wall */
+  const proxy=ax=>({get v(){return gFrom(g,ax);},set v(val){gSetFrom(g,ax,val);}});
+  if(g.run!=='x')gr.append(fld('Across',num(proxy('x'),'v',{id:'f-'+g.id+'-x',min:-500,max:1500})),fld('Measured from',sel(g,'refX',[['left',w.left],['right',w.right]],{on:'obj',after:render})));
+  if(g.run!=='z')gr.append(fld('Depth',num(proxy('z'),'v',{id:'f-'+g.id+'-z',min:-500,max:1500})),fld('Measured from',sel(g,'refZ',[['front',w.front],['back',w.back]],{on:'obj',after:render})));
+  if(g.run!=='y')gr.append(fld('Height',num(g,'y',{min:-50,max:300})));
+  e.append(gr,el('p','note','Height is above the floor datum (the room floor, or the house floor at the front of the stage in a theatre). Changing “Measured from” keeps the guide where it is and just measures it from the other wall.'));
+  panel.append(e);}
+
 /* ---------- labels ---------- */
 function updateLabels(){
   const items=[];S.projectors.forEach(p=>items.push({id:p.id,t:p.name,c:p.color,pos:lensPos(p).add(V(0,.45,0))}));
   S.screens.forEach(s=>items.push({id:s.id,t:s.name,c:null,pos:screenWorld(s,.5,1).p.add(V(0,.25,0))}));
+  guideLabels(items);
   distLast.forEach((d,i)=>items.push({id:'d:'+d.id+':'+i,dist:true,dh:d.k==='y',pos:d.k==='y'?d.b:d.a.clone().lerp(d.b,d.k==='s'?.62:.38),h:d.tag}));
   const r=renderer.domElement.getBoundingClientRect();const seen=new Set();
   items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',it.dist?'tag dtag':'tag');d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',it.dh);
@@ -2303,13 +2421,13 @@ $('#viewMode').addEventListener('change',e=>setView(e.target.value));
 document.querySelectorAll('#dispSeg button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
 $('#lumUnit').addEventListener('change',e=>{S.lumUnit=e.target.value;dirty.color=true;save();render();});
 function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(S.dist||'off')?'true':'false'));}
-function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
+function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];if(S.snap==null)S.snap=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
   syncHeader();dirty.surf=dirty.objs=dirty.compute=true;setCam('orbit');save();render();}
 
 function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&MODELFILE.name===S.model.name&&RAWMODEL){rebuildModel();return;}
   idbGet().then(v=>{if(v&&v.name===S.model.name){loadModelData(v.name,v.ext,v.data,false);}else{MODELMSG=`Import ${S.model.name} again to see the model on this device.`;render();}}).catch(()=>{MODELMSG='This browser blocked storage. Import the model file again.';render();});}
 /* ============================== BOOT ============================== */
-loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];}else{preset('gallery');}
+loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];if(S.snap==null)S.snap=true;}else{preset('gallery');}
 S.units='ft';/* the app always opens in feet; the m / ft switch still changes it for the session */
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
 resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
