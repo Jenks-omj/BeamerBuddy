@@ -199,11 +199,10 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
     <section id="view" aria-label="3D venue">
       <div id="labels"></div>
       <div class="hud"><div class="chip" id="hint">Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster</div><div class="chip" id="perf"></div><div class="ghelp" id="guideHelp" hidden><b>Guide tool on</b><dl>
-        <dt>Click + drag</dt><dd>From a wall, screen or floor into the room</dd>
+        <dt>Click + drag</dt><dd>From a wall or screen into the room; on the floor, measures from the nearest wall</dd>
         <dt>Click, move, click</dt><dd>Same, without holding the button</dd>
         <dt><kbd>0–9</kbd> <kbd>Enter</kbd></dt><dd>Type an exact distance while placing</dd>
-        <dt><kbd>V</kbd></dt><dd>Vertical line (from a wall)</dd>
-        <dt><kbd>X</kbd></dt><dd>Turn a floor guide 90°</dd>
+        <dt><kbd>V</kbd></dt><dd>Vertical line instead of a floor line</dd>
         <dt>Click a label</dt><dd>Select that guide</dd>
         <dt><kbd>Del</kbd> / <span style="color:var(--bad)">×</span></dt><dd>Delete the selected guide</dd>
         <dt><kbd>Alt</kbd> + drag</dt><dd>Move objects without snapping</dd>
@@ -213,7 +212,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button><button data-v="content">Content</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
         <button class="btn sm" id="beamBtn" aria-pressed="true">Beams</button>
-        <button class="btn sm" id="guideBtn" aria-pressed="false" title="Tape-measure guides: click a wall, screen or the floor and drag out a dotted guide line at a distance from it. Type a number while dragging for an exact distance, V for a vertical line, X to turn a floor guide, Esc to cancel.">Guide</button>
+        <button class="btn sm" id="guideBtn" aria-pressed="false" title="Tape-measure guides: click a wall, screen or the floor and drag out a dotted floor line at a distance from the wall. Type a number while dragging for an exact distance, V for a vertical line, Esc to cancel.">Guide</button>
         <button class="btn sm" id="fastBtn" aria-pressed="true" title="While the camera moves: render at lower resolution and hide beams, image-edge outlines, model edges, dimensions and labels. Full detail returns when the camera stops.">Fast orbit</button>
         <div class="brk"></div>
         <div class="seg" id="distSeg" role="group" aria-label="Distances" title="Floor-plan dimensions, like a drafting top view: distance square to each screen face, to the walls around the object, and height above the floor. Projectors measure from the center of the body. Selected: everything for the selected object. All: height and screen distances for every projector, screen and riser."><button data-v="off">Dims off</button><button data-v="sel">Selected</button><button data-v="all">All</button></div>
@@ -2070,26 +2069,31 @@ function wallNames(){return S.mode==='indoor'?{left:'left wall',right:'right wal
   :S.mode==='theatre'?{left:'left side',right:'right side',front:'upstage wall',back:'house back wall'}:{left:'left edge',right:'right edge',front:'front edge',back:'back edge'};}
 function siteH(){return S.mode==='indoor'?S.room.H:S.mode==='theatre'?thG().H:S.mode==='model'&&MODELGEO?MODELGEO.size[1]:10;}
 function newGuide(run,over={}){const {W,L}=siteDims();
-  return Object.assign({id:uid('g'),name:'Guide '+(S.guides.length+1),run,x:+(W/2).toFixed(3),z:+(L/2).toFixed(3),y:2.4,refX:'left',refZ:'front',color:GUIDE_COLORS[S.guides.length%GUIDE_COLORS.length]},over);}
+  return Object.assign({id:uid('g'),name:'Guide '+(S.guides.length+1),run,x:+(W/2).toFixed(3),z:+(L/2).toFixed(3),y:2.4,floor:true,refX:'left',refZ:'front',color:GUIDE_COLORS[S.guides.length%GUIDE_COLORS.length]},over);}
 /* the panel's value on one axis: distance from the chosen wall (x, z) or height (y) */
 function gFrom(g,ax){const {W,L}=siteDims();return ax==='x'?(g.refX==='right'?W-g.x:g.x):ax==='z'?(g.refZ==='back'?L-g.z:g.z):g.y;}
 function gSetFrom(g,ax,v){const {W,L}=siteDims();if(ax==='x')g.x=+(g.refX==='right'?W-v:v).toFixed(4);else if(ax==='z')g.z=+(g.refZ==='back'?L-v:v).toFixed(4);else g.y=+v.toFixed(4);}
 function guideText(g){const w=wallNames(),p=[];if(g.run!=='x')p.push(`${fmtLen(gFrom(g,'x'))} from ${w[g.refX]}`);
-  if(g.run!=='z')p.push(`${fmtLen(gFrom(g,'z'))} from ${w[g.refZ]}`);if(g.run!=='y')p.push(Math.abs(g.y)<.005?'on the floor':`${fmtLen(g.y)} high`);return p.join(', ');}
+  if(g.run!=='z')p.push(`${fmtLen(gFrom(g,'z'))} from ${w[g.refZ]}`);if(g.run!=='y')p.push(g.floor?'on the floor':`${fmtLen(g.y)} high`);return p.join(', ');}
+/* a guide's points: floor guides follow the ground (rake, slope, stage deck), raised and vertical ones are straight */
 function guideEnds(g){const {W,L}=siteDims(),pad=S.mode==='outdoor'||S.mode==='model'?2:0;
   if(g.run==='x')return [V(-pad,g.y,g.z),V(W+pad,g.y,g.z)];if(g.run==='z')return [V(g.x,g.y,-pad),V(g.x,g.y,L+pad)];
   return [V(g.x,groundY(g.x,g.z),g.z),V(g.x,Math.max(siteH(),groundY(g.x,g.z)+1),g.z)];}
-function guideLine(a,b,color,opacity,solid){const m=solid?new THREE.LineBasicMaterial({color,transparent:true,opacity,depthTest:false})
+function guideAt(g,k){const [a,b]=guideEnds(g),p=a.lerp(b,k);if(g.floor&&g.run!=='y')p.y=groundY(p.x,p.z)+.01;return p;}
+function guidePoints(g){if(!g.floor||g.run==='y')return guideEnds(g);const n=64,out=[];for(let i=0;i<=n;i++)out.push(guideAt(g,i/n));return out;}
+function guideLine(pts,color,opacity,solid){const m=solid?new THREE.LineBasicMaterial({color,transparent:true,opacity,depthTest:false})
     :new THREE.LineDashedMaterial({color,dashSize:.3,gapSize:.18,transparent:true,opacity,depthTest:false});
-  const l=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([a,b]),m);if(!solid)l.computeLineDistances();l.renderOrder=9;l.frustumCulled=false;return l;}
+  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),m);if(!solid)l.computeLineDistances();l.renderOrder=9;l.frustumCulled=false;return l;}
+/* the tool's tape: from the wall to the guide, drawn on the floor for floor guides */
+function tapeEnds(d){const A=d.P.clone(),B=d.P.clone().addScaledVector(d.a,d.t);if(d.g&&d.g.floor&&d.g.run!=='y'){A.y=groundY(A.x,A.z)+.01;B.y=groundY(B.x,B.z)+.01;}return [A,B];}
 function buildGuides(){disposeGroup(G.guides);
-  (S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),hi=g.id===guideSel||g.id===guideSnap;G.guides.add(guideLine(a,b,new THREE.Color(g.color),hi?1:.7));});
-  if(gDrag&&gDrag.g){const [a,b]=guideEnds(gDrag.g);G.guides.add(guideLine(a,b,TC['--accent'],1));G.guides.add(guideLine(gDrag.P,gDrag.P.clone().addScaledVector(gDrag.a,gDrag.t),TC['--accent'],1,true));}}
+  (S.guides||[]).forEach(g=>{const hi=g.id===guideSel||g.id===guideSnap;G.guides.add(guideLine(guidePoints(g),new THREE.Color(g.color),hi?1:.7));});
+  if(gDrag&&gDrag.g){G.guides.add(guideLine(guidePoints(gDrag.g),TC['--accent'],1));G.guides.add(guideLine(tapeEnds(gDrag),TC['--accent'],1,true));}}
 /* a label on each guide, at the point nearest the orbit target, plus the live tape-measure readout while dragging one out */
 function guideLabels(items){
   (S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),d=b.clone().sub(a),k=clamp(controls.target.clone().sub(a).dot(d)/Math.max(1e-9,d.lengthSq()),.04,.96);
-    items.push({id:'g:'+g.id,dist:true,cls:'gtag',sel:g.id===guideSel,pos:a.clone().addScaledVector(d,k),h:`<i class="d">${esc(g.name)}</i>${esc(guideText(g))}${guideTool||g.id===guideSel?`<button type="button" class="gx" data-gdel="${g.id}" title="Delete this guide" aria-label="Delete ${esc(g.name)}">×</button>`:''}`});});
-  if(gDrag&&gDrag.g)items.push({id:'g:drag',dist:true,pos:gDrag.P.clone().addScaledVector(gDrag.a,gDrag.t/2),h:`<i class="d">${esc(gDrag.from)}</i>${gDrag.typed?esc(gDrag.typed)+' '+S.units+' ↵':fmtLen(gDrag.t)}`});}
+    items.push({id:'g:'+g.id,dist:true,cls:'gtag',sel:g.id===guideSel,pos:guideAt(g,k),h:`<i class="d">${esc(g.name)}</i>${esc(guideText(g))}${guideTool||g.id===guideSel?`<button type="button" class="gx" data-gdel="${g.id}" title="Delete this guide" aria-label="Delete ${esc(g.name)}">×</button>`:''}`});});
+  if(gDrag&&gDrag.g)items.push({id:'g:drag',dist:true,pos:(([A,B])=>A.lerp(B,.5))(tapeEnds(gDrag)),h:`<i class="d">${esc(gDrag.from)}</i>${gDrag.typed?esc(gDrag.typed)+' '+S.units+' ↵':fmtLen(gDrag.t)}`});}
 function selectGuide(id){guideSel=id;buildGuides();if(tab==='venue')render();}
 function deleteGuide(id){const g=S.guides.find(x=>x.id===id);if(!g)return;S.guides=S.guides.filter(x=>x!==g);if(guideSel===id)guideSel=null;changed('obj');render();toast(`Deleted ${g.name}`);}
 labelsEl.addEventListener('pointerdown',e=>{const t=e.target.closest('.gtag');if(!t)return;e.stopPropagation();e.preventDefault();
@@ -2100,16 +2104,20 @@ function addGuide(run,over){const g=newGuide(run,over);S.guides.push(g);guideSel
 const GUIDE_HINT='Guide tool: drag out guides from a wall, screen or the floor (keys below)';
 function setGuideTool(on){guideTool=on;$('#guideBtn').setAttribute('aria-pressed',on?'true':'false');$('#guideHelp').hidden=!on;renderer.domElement.style.cursor=on?'crosshair':'';
   if(!on)cancelGuide();$('#hint').textContent=on?GUIDE_HINT:'Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster';}
-/* what a click hit: the axis the guide's offset grows along (unit vector into the room) and the default run direction */
-function guideStart(hit,viewDir){const {W,L}=siteDims(),n=hit.n.clone();if(n.dot(viewDir)>0)n.negate();
-  const ax=Math.abs(n.y)>=Math.max(Math.abs(n.x),Math.abs(n.z))?'y':Math.abs(n.x)>=Math.abs(n.z)?'x':'z';
-  const a=V(ax==='x'?Math.sign(n.x)||1:0,ax==='y'?Math.sign(n.y)||1:0,ax==='z'?Math.sign(n.z)||1:0),P=hit.point.clone();P[ax]=+P[ax].toFixed(4);
-  const w=wallNames(),run=ax==='y'?(Math.abs(viewDir.x)>Math.abs(viewDir.z)?'z':'x'):ax==='x'?'z':'x';
-  const from=ax==='x'?w[P.x<W/2?'left':'right']:ax==='z'?(String(hit.key||'').startsWith('scr:')?'screen':w[P.z<L/2?'front':'back']):(a.y>0?'floor':'ceiling');
-  return {P,a,ax,run,t:0,typed:'',from,refX:P.x<W/2?'left':'right',refZ:P.z<L/2?'front':'back',moved:false,sx:0,sy:0};}
-/* the guide the tool would drop now: pinned at the click point, moved t along the offset axis */
+/* what a click hit: the wall the guide is measured from (axis + unit vector into the room) and the run along that wall.
+   A floor or ceiling click measures from the nearest wall, starting under the cursor */
+const roundT=t=>{const st=S.units==='ft'?1/12/FT:.01;return Math.max(0,Math.round(t/st)*st);};
+function guideStart(hit,viewDir){const {W,L}=siteDims(),w=wallNames(),n=hit.n.clone();if(n.dot(viewDir)>0)n.negate();
+  let ax=Math.abs(n.y)>=Math.max(Math.abs(n.x),Math.abs(n.z))?'y':Math.abs(n.x)>=Math.abs(n.z)?'x':'z';
+  const P=hit.point.clone(),scr=String(hit.key||'').startsWith('scr:'),onFloor=ax==='y';let t=0;
+  if(onFloor){const c=[['x',P.x,1],['x',W-P.x,-1],['z',P.z,1],['z',L-P.z,-1]].sort((u,v)=>u[1]-v[1])[0];
+    ax=c[0];t=c[1];P[ax]=c[2]>0?0:ax==='x'?W:L;n.set(ax==='x'?c[2]:0,0,ax==='z'?c[2]:0);}
+  const a=V(ax==='x'?Math.sign(n.x)||1:0,0,ax==='z'?Math.sign(n.z)||1:0);P[ax]=+P[ax].toFixed(4);
+  const from=ax==='x'?w[P.x<W/2?'left':'right']:scr?'screen':w[P.z<L/2?'front':'back'];
+  return {P,a,ax,run:ax==='x'?'z':'x',t:roundT(t),typed:'',from,onFloor,y0:hit.point.y,refX:P.x<W/2?'left':'right',refZ:P.z<L/2?'front':'back',moved:false,sx:0,sy:0};}
+/* the guide the tool would drop now: on the floor, t from the wall (or a vertical line there) */
 function guideFromDrag(d){const Q=d.P.clone().addScaledVector(d.a,d.t);
-  return {id:'drag',name:'',run:d.run,x:+Q.x.toFixed(4),z:+Q.z.toFixed(4),y:+Q.y.toFixed(4),refX:d.refX,refZ:d.refZ,color:'#000'};}
+  return {id:'drag',name:'',run:d.run,x:+Q.x.toFixed(4),z:+Q.z.toFixed(4),y:0,floor:true,refX:d.refX,refZ:d.refZ,color:'#000'};}
 /* pick only faces you can see (walls are one-sided, so a ceiling seen from above is skipped) */
 function guideDown(e){setMouse(e);const hit=castRay(ray.ray.origin,ray.ray.direction,surfaces.filter(s=>!s.isModel).map(s=>s.mesh));
   if(gDrag){commitGuide();return;}/* second click of click-move-click */
@@ -2117,33 +2125,35 @@ function guideDown(e){setMouse(e);const hit=castRay(ray.ray.origin,ray.ray.direc
   gDrag=guideStart(hit,ray.ray.direction);gDrag.sx=e.clientX;gDrag.sy=e.clientY;gDrag.g=guideFromDrag(gDrag);
   controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);buildGuides();}
 function guideMove(e){if(!gDrag)return;setMouse(e);if(Math.hypot(e.clientX-gDrag.sx,e.clientY-gDrag.sy)>4)gDrag.moved=true;if(gDrag.typed)return;
-  /* intersect the mouse ray with the plane through the offset axis that faces the camera, then read the distance along the axis */
-  const a=gDrag.a,cd=ray.ray.direction,m=cd.clone().sub(a.clone().multiplyScalar(cd.dot(a)));if(m.lengthSq()<1e-6)return;
-  const Q=V();if(!ray.ray.intersectPlane(new THREE.Plane().setFromNormalAndCoplanarPoint(m.normalize(),gDrag.P),Q))return;
-  const st=S.units==='ft'?1/12/FT:.01;gDrag.t=Math.max(0,Math.round(Q.clone().sub(gDrag.P).dot(a)/st)*st);gDrag.g=guideFromDrag(gDrag);buildGuides();}
+  /* from the floor: follow the cursor across the floor. From a wall: intersect the mouse ray with the plane through the offset
+     axis that faces the camera. Either way, read the distance along the axis */
+  const a=gDrag.a,cd=ray.ray.direction,Q=V();let pl;
+  if(gDrag.onFloor)pl=new THREE.Plane(V(0,1,0),-gDrag.y0);
+  else{const m=cd.clone().sub(a.clone().multiplyScalar(cd.dot(a)));if(m.lengthSq()<1e-6)return;pl=new THREE.Plane().setFromNormalAndCoplanarPoint(m.normalize(),gDrag.P);}
+  if(!ray.ray.intersectPlane(pl,Q))return;gDrag.t=roundT(Q.clone().sub(gDrag.P).dot(a));gDrag.g=guideFromDrag(gDrag);buildGuides();}
 function guideUp(){if(!gDrag)return;if(gDrag.moved&&!gDrag.typed)commitGuide();/* a plain click leaves it following the mouse until the next click */}
 function commitGuide(){const d=gDrag;if(!d)return;gDrag=null;controls.enabled=camMode==='orbit'||camMode==='top';
   if(d.t<=0&&!d.typed){buildGuides();return;}const g=d.g;
-  addGuide(g.run,{x:g.x,z:g.z,y:g.y,refX:g.refX,refZ:g.refZ,name:`Guide ${S.guides.length+1} (${fmtLen(d.t)} from ${d.from})`});}
+  addGuide(g.run,{x:g.x,z:g.z,floor:true,refX:g.refX,refZ:g.refZ,name:`Guide ${S.guides.length+1}`});}
 function cancelGuide(){if(!gDrag)return;gDrag=null;controls.enabled=camMode==='orbit'||camMode==='top';buildGuides();}
 window.addEventListener('keydown',e=>{if(!guideTool||typing(e))return;
   if(e.key==='Escape'){if(gDrag)cancelGuide();else setGuideTool(false);e.preventDefault();return;}
   if(!gDrag){if((e.key==='Delete'||e.key==='Backspace')&&guideSel){deleteGuide(guideSel);e.preventDefault();}return;}const k=e.key.toLowerCase();
-  if(k==='v'&&gDrag.ax!=='y'){gDrag.run=gDrag.run==='y'?(gDrag.ax==='x'?'z':'x'):'y';}
-  else if(k==='x'&&gDrag.ax==='y'){gDrag.run=gDrag.run==='x'?'z':'x';}
+  if(k==='v'){gDrag.run=gDrag.run==='y'?(gDrag.ax==='x'?'z':'x'):'y';}
   else if(/^[0-9.]$/.test(e.key)){gDrag.typed+=e.key;}
   else if(e.key==='Backspace'){gDrag.typed=gDrag.typed.slice(0,-1);}
   else if(e.key==='Enter'){const v=parseFloat(gDrag.typed);if(isFinite(v)&&v>=0){gDrag.t=fromD(v);gDrag.g=guideFromDrag(gDrag);gDrag.typed='';commitGuide();}e.preventDefault();return;}
   else return;
   e.preventDefault();e.stopImmediatePropagation();gDrag.g=guideFromDrag(gDrag);buildGuides();},true);
 
-/* ---------- snapping: a dragged object's floor position locks onto guides near it ---------- */
+/* ---------- snapping: a dragged object's floor position locks onto guides near it. Floor and vertical guides work like a
+   floor plan (any height); a raised guide only grabs objects near its height ---------- */
 function objSpan(kind,o){if(kind==='proj'){const y=lensPos(o).y;return [y-.6,y+.6];}
   if(kind==='scr'){const b=groundY(o.x,o.z)+o.elev;return [b,b+o.h];}if(kind==='rsr'){const b=groundY(o.x,o.z);return [b,b+o.h];}
   const b=personBase(o);return [b,b+personH(o)];}
 function snapToGuides(kind,o,alt){guideSnap=null;if(!S.snap||alt||!S.guides.length)return;const {W,L}=siteDims(),tol=clamp(Math.max(W,L)*.015,.1,.5),[lo,hi]=objSpan(kind,o);
   let bx=null,bz=null;
-  for(const g of S.guides){if(g.run!=='y'&&(g.y<lo-1||g.y>hi+1))continue;
+  for(const g of S.guides){if(g.run!=='y'&&!g.floor&&(g.y<lo-1||g.y>hi+1))continue;
     if(g.run!=='x'){const d=Math.abs(o.x-g.x);if(d<tol&&(!bx||d<bx.d))bx={d,v:g.x,id:g.id};}
     if(g.run!=='z'){const d=Math.abs(o.z-g.z);if(d<tol&&(!bz||d<bz.d))bz={d,v:g.z,id:g.id};}}
   if(bx){o.x=bx.v;guideSnap=bx.id;}if(bz){o.z=bz.v;guideSnap=bz.id;}}
@@ -2151,7 +2161,7 @@ function snapToGuides(kind,o,alt){guideSnap=null;if(!S.snap||alt||!S.guides.leng
 /* ---------- panel: Venue → Guides ---------- */
 function renderGuides(){const w=wallNames();
   const s=sec('Guides',[btn('+ Across',()=>addGuide('x')),btn('+ Front–back',()=>addGuide('z')),btn('+ Vertical',()=>addGuide('y'))]);
-  s.append(el('p','note','Dotted reference lines at set distances from the walls, like guides in Photoshop or SketchUp. Add one here, or turn on Guide in the 3D view and drag one out from a wall, screen or the floor. Dragged projectors, screens, risers and people snap to nearby guides (hold Alt to drag without snapping).'));
+  s.append(el('p','note','Dotted lines on the floor at set distances from the walls, like a floor plan or tape on the deck. Add one here, or turn on Guide in the 3D view and drag one out from a wall, screen or the floor. Dragged projectors, screens, risers and people snap over nearby guides at any height (hold Alt to drag without snapping).'));
   const list=el('div','list');
   S.guides.forEach(g=>{const it=el('button','item');it.type='button';it.setAttribute('aria-current',g.id===guideSel?'true':'false');const d=el('span','dot');d.style.background=g.color;
     const mid=el('div');mid.style.minWidth='0';mid.append(el('div','nm',esc(g.name)),el('div','sub',esc(RUN_NAME[g.run]+' · '+guideText(g))));
@@ -2170,8 +2180,9 @@ function renderGuides(){const w=wallNames();
   const proxy=ax=>({get v(){return gFrom(g,ax);},set v(val){gSetFrom(g,ax,val);}});
   if(g.run!=='x')gr.append(fld('Across',num(proxy('x'),'v',{id:'f-'+g.id+'-x',min:-500,max:1500})),fld('Measured from',sel(g,'refX',[['left',w.left],['right',w.right]],{on:'obj',after:render})));
   if(g.run!=='z')gr.append(fld('Depth',num(proxy('z'),'v',{id:'f-'+g.id+'-z',min:-500,max:1500})),fld('Measured from',sel(g,'refZ',[['front',w.front],['back',w.back]],{on:'obj',after:render})));
-  if(g.run!=='y')gr.append(fld('Height',num(g,'y',{min:-50,max:300})));
-  e.append(gr,el('p','note','Height is above the floor datum (the room floor, or the house floor at the front of the stage in a theatre). Changing “Measured from” keeps the guide where it is and just measures it from the other wall.'));
+  if(g.run!=='y'){const f=el('div','fld wide');f.append(chk(g,'floor','On the floor (follows rakes and slopes)',{on:'obj',after:render}));gr.append(f);
+    if(!g.floor)gr.append(fld('Height',num(g,'y',{min:-50,max:300})));}
+  e.append(gr,el('p','note','Guides sit on the floor like a floor plan. Untick “On the floor” to raise one to a fixed height (above the floor datum: the room floor, or the house floor at the front of the stage in a theatre). Changing “Measured from” keeps the guide where it is and just measures it from the other wall.'));
   panel.append(e);}
 
 /* ---------- labels ---------- */
@@ -2209,7 +2220,10 @@ function walk(dt){
 const FULL_PR=Math.min(2,window.devicePixelRatio||1),lastCam=new THREE.Matrix4();let camMoving=false,camStill=0;
 function setLite(on){camMoving=on;renderer.setPixelRatio(on?Math.min(1,FULL_PR):FULL_PR);
   G.beams.visible=G.outl.visible=!on;G.aux.children.forEach(o=>{if(o.userData.model)o.visible=!on;});if(on)distLines.visible=false;/* updateDistances restores it */labelsEl.hidden=on;}
-function trackCamera(now){camera.updateMatrixWorld();const moved=!lastCam.equals(camera.matrixWorld);lastCam.copy(camera.matrixWorld);
+/* damping keeps nudging the camera by ever smaller amounts after you let go; ignore moves too small to see, or the view
+   flips between fast and full detail and flickers */
+function trackCamera(now){camera.updateMatrixWorld();const a=camera.matrixWorld.elements,b=lastCam.elements,tol=1e-4*Math.max(1,camera.position.distanceTo(controls.target));
+  let moved=false;for(let i=0;i<16;i++)if(Math.abs(a[i]-b[i])>(i>=12?tol:1e-5)){moved=true;break;}lastCam.copy(camera.matrixWorld);
   if(moved)camStill=now;
   if(fastCam&&moved&&!camMoving&&!drag)setLite(true);
   else if(camMoving&&(!fastCam||now-camStill>180))setLite(false);}
@@ -2445,13 +2459,13 @@ $('#viewMode').addEventListener('change',e=>setView(e.target.value));
 document.querySelectorAll('#dispSeg button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
 $('#lumUnit').addEventListener('change',e=>{S.lumUnit=e.target.value;dirty.color=true;save();render();});
 function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(S.dist||'off')?'true':'false'));}
-function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];if(S.snap==null)S.snap=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
+function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});if(S.snap==null)S.snap=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
   syncHeader();dirty.surf=dirty.objs=dirty.compute=true;setCam('orbit');save();render();}
 
 function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&MODELFILE.name===S.model.name&&RAWMODEL){rebuildModel();return;}
   idbGet().then(v=>{if(v&&v.name===S.model.name){loadModelData(v.name,v.ext,v.data,false);}else{MODELMSG=`Import ${S.model.name} again to see the model on this device.`;render();}}).catch(()=>{MODELMSG='This browser blocked storage. Import the model file again.';render();});}
 /* ============================== BOOT ============================== */
-loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];if(S.snap==null)S.snap=true;}else{preset('gallery');}
+loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});if(S.snap==null)S.snap=true;}else{preset('gallery');}
 S.units='ft';/* the app always opens in feet; the m / ft switch still changes it for the session */
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
 resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
