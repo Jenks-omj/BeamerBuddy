@@ -55,6 +55,15 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
 .btn.ghost{background:transparent}
 .btn.sm{padding:3px 8px;font-size:12px}
 .btn.danger{color:var(--bad)}
+#guideBtn[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--bg)}
+.ghelp{background:var(--surface);border:1px solid var(--bad);border-left-width:3px;border-radius:6px;padding:8px 10px;width:330px;max-width:100%;font-size:12px;line-height:1.35;pointer-events:auto}
+.ghelp b{display:block;font-family:var(--f-disp);letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--bad);margin-bottom:4px}
+.ghelp dl{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;margin:0}
+.ghelp dt{font-family:var(--f-mono);font-size:11px;white-space:nowrap}.ghelp dd{margin:0;color:var(--muted)}
+.ghelp kbd{font-family:var(--f-mono);font-size:10.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--raise)}
+.tag.gtag{pointer-events:auto;cursor:pointer}.tag.gtag.sel{border-color:var(--accent)}
+.tag.gtag .gx{border:0;background:transparent;color:var(--bad);font-weight:700;cursor:pointer;padding:0 0 0 6px;font-size:13px;line-height:1}
+.grow{display:flex;gap:4px;align-items:stretch}.grow .item{flex:1;min-width:0}
 select,input[type=number],input[type=text]{background:var(--raise);border:1px solid var(--line);border-radius:5px;padding:4px 6px;min-width:0}
 .lbl{font-family:var(--f-disp);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px;min-height:0}
@@ -189,7 +198,17 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
   <main>
     <section id="view" aria-label="3D venue">
       <div id="labels"></div>
-      <div class="hud"><div class="chip" id="hint">Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster</div><div class="chip" id="perf"></div><div class="chip" id="dimnote" hidden>Floor-plan dimensions and height above the floor. All projector measurements are taken from the center of the projector body.</div></div>
+      <div class="hud"><div class="chip" id="hint">Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster</div><div class="chip" id="perf"></div><div class="ghelp" id="guideHelp" hidden><b>Guide tool on</b><dl>
+        <dt>Click + drag</dt><dd>From a wall, screen or floor into the room</dd>
+        <dt>Click, move, click</dt><dd>Same, without holding the button</dd>
+        <dt><kbd>0–9</kbd> <kbd>Enter</kbd></dt><dd>Type an exact distance while placing</dd>
+        <dt><kbd>V</kbd></dt><dd>Vertical line (from a wall)</dd>
+        <dt><kbd>X</kbd></dt><dd>Turn a floor guide 90°</dd>
+        <dt>Click a label</dt><dd>Select that guide</dd>
+        <dt><kbd>Del</kbd> / <span style="color:var(--bad)">×</span></dt><dd>Delete the selected guide</dd>
+        <dt><kbd>Alt</kbd> + drag</dt><dd>Move objects without snapping</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Cancel; again to leave the tool</dd></dl></div>
+      <div class="chip" id="dimnote" hidden>Floor-plan dimensions and height above the floor. All projector measurements are taken from the center of the projector body.</div></div>
       <div class="viewbtns">
         <div class="seg" id="dispSeg" role="group" aria-label="Surface display"><button data-v="lum">Luminance</button><button data-v="edges">Image edges</button><button data-v="content">Content</button></div>
         <div class="seg" id="camSeg" role="group" aria-label="Camera"><button data-v="orbit">Orbit</button><button data-v="top">Top</button><button data-v="pov">Lens view</button></div>
@@ -2069,13 +2088,17 @@ function buildGuides(){disposeGroup(G.guides);
 /* a label on each guide, at the point nearest the orbit target, plus the live tape-measure readout while dragging one out */
 function guideLabels(items){
   (S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),d=b.clone().sub(a),k=clamp(controls.target.clone().sub(a).dot(d)/Math.max(1e-9,d.lengthSq()),.04,.96);
-    items.push({id:'g:'+g.id,dist:true,pos:a.clone().addScaledVector(d,k),h:`<i class="d">${esc(g.name)}</i>${esc(guideText(g))}`});});
+    items.push({id:'g:'+g.id,dist:true,cls:'gtag',sel:g.id===guideSel,pos:a.clone().addScaledVector(d,k),h:`<i class="d">${esc(g.name)}</i>${esc(guideText(g))}${guideTool||g.id===guideSel?`<button type="button" class="gx" data-gdel="${g.id}" title="Delete this guide" aria-label="Delete ${esc(g.name)}">×</button>`:''}`});});
   if(gDrag&&gDrag.g)items.push({id:'g:drag',dist:true,pos:gDrag.P.clone().addScaledVector(gDrag.a,gDrag.t/2),h:`<i class="d">${esc(gDrag.from)}</i>${gDrag.typed?esc(gDrag.typed)+' '+S.units+' ↵':fmtLen(gDrag.t)}`});}
+function selectGuide(id){guideSel=id;buildGuides();if(tab==='venue')render();}
+function deleteGuide(id){const g=S.guides.find(x=>x.id===id);if(!g)return;S.guides=S.guides.filter(x=>x!==g);if(guideSel===id)guideSel=null;changed('obj');render();toast(`Deleted ${g.name}`);}
+labelsEl.addEventListener('pointerdown',e=>{const t=e.target.closest('.gtag');if(!t)return;e.stopPropagation();e.preventDefault();
+  const del=e.target.closest('[data-gdel]');if(del){deleteGuide(del.dataset.gdel);return;}selectGuide(t.dataset.id.slice(2));});
 function addGuide(run,over){const g=newGuide(run,over);S.guides.push(g);guideSel=g.id;changed('obj');if(tab!=='venue')setTab('venue');else render();return g;}
 
 /* ---------- tape-measure tool: click a wall / screen / floor, drag away from it, release (or click again) to drop a guide ---------- */
-const GUIDE_HINT='Guide: click a wall, screen or the floor and drag out a guide · type a distance + Enter for an exact one · V vertical · X turn · Esc cancel';
-function setGuideTool(on){guideTool=on;$('#guideBtn').setAttribute('aria-pressed',on?'true':'false');renderer.domElement.style.cursor=on?'crosshair':'';
+const GUIDE_HINT='Guide tool: drag out guides from a wall, screen or the floor (keys below)';
+function setGuideTool(on){guideTool=on;$('#guideBtn').setAttribute('aria-pressed',on?'true':'false');$('#guideHelp').hidden=!on;renderer.domElement.style.cursor=on?'crosshair':'';
   if(!on)cancelGuide();$('#hint').textContent=on?GUIDE_HINT:'Drag objects to move them · drag space to orbit · WASD to walk, Q/E down/up, Shift for faster';}
 /* what a click hit: the axis the guide's offset grows along (unit vector into the room) and the default run direction */
 function guideStart(hit,viewDir){const {W,L}=siteDims(),n=hit.n.clone();if(n.dot(viewDir)>0)n.negate();
@@ -2105,7 +2128,7 @@ function commitGuide(){const d=gDrag;if(!d)return;gDrag=null;controls.enabled=ca
 function cancelGuide(){if(!gDrag)return;gDrag=null;controls.enabled=camMode==='orbit'||camMode==='top';buildGuides();}
 window.addEventListener('keydown',e=>{if(!guideTool||typing(e))return;
   if(e.key==='Escape'){if(gDrag)cancelGuide();else setGuideTool(false);e.preventDefault();return;}
-  if(!gDrag)return;const k=e.key.toLowerCase();
+  if(!gDrag){if((e.key==='Delete'||e.key==='Backspace')&&guideSel){deleteGuide(guideSel);e.preventDefault();}return;}const k=e.key.toLowerCase();
   if(k==='v'&&gDrag.ax!=='y'){gDrag.run=gDrag.run==='y'?(gDrag.ax==='x'?'z':'x'):'y';}
   else if(k==='x'&&gDrag.ax==='y'){gDrag.run=gDrag.run==='x'?'z':'x';}
   else if(/^[0-9.]$/.test(e.key)){gDrag.typed+=e.key;}
@@ -2132,7 +2155,8 @@ function renderGuides(){const w=wallNames();
   const list=el('div','list');
   S.guides.forEach(g=>{const it=el('button','item');it.type='button';it.setAttribute('aria-current',g.id===guideSel?'true':'false');const d=el('span','dot');d.style.background=g.color;
     const mid=el('div');mid.style.minWidth='0';mid.append(el('div','nm',esc(g.name)),el('div','sub',esc(RUN_NAME[g.run]+' · '+guideText(g))));
-    it.append(d,mid,el('div','ro'));it.addEventListener('click',()=>{guideSel=g.id===guideSel?null:g.id;buildGuides();render();});list.append(it);});
+    it.append(d,mid,el('div','ro'));it.addEventListener('click',()=>{guideSel=g.id===guideSel?null:g.id;buildGuides();render();});
+    const row=el('div','grow'),x=btn('×',()=>deleteGuide(g.id),'btn sm danger');x.title='Delete '+g.name;x.setAttribute('aria-label','Delete '+g.name);row.append(it,x);list.append(row);});
   if(!S.guides.length)list.append(el('p','note','No guides yet.'));
   s.append(list,chk(S,'snap','Snap dragged objects to guides',{on:'none'}));panel.append(s);
   const g=S.guides.find(x=>x.id===guideSel);if(!g)return;
@@ -2157,7 +2181,7 @@ function updateLabels(){
   guideLabels(items);
   distLast.forEach((d,i)=>items.push({id:'d:'+d.id+':'+i,dist:true,dh:d.k==='y',pos:d.k==='y'?d.b:d.a.clone().lerp(d.b,d.k==='s'?.62:.38),h:d.tag}));
   const r=renderer.domElement.getBoundingClientRect();const seen=new Set();
-  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',it.dist?'tag dtag':'tag');d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',it.dh);
+  items.forEach(it=>{let d=labelsEl.querySelector(`[data-id="${it.id}"]`);if(!d){d=el('div',(it.dist?'tag dtag':'tag')+(it.cls?' '+it.cls:''));d.dataset.id=it.id;labelsEl.append(d);}seen.add(it.id);if(it.dist)d.classList.toggle('dh',it.dh);if(it.cls)d.classList.toggle('sel',!!it.sel);
     const html=it.h||(it.c?`<b style="background:${it.c}"></b>`:'')+esc(it.t);if(d._h!==html){d.innerHTML=html;d._h=html;}
     const v=it.pos.clone().project(camera);const vis=v.z<1&&v.z>-1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1&&camMode!=='pov';d.hidden=!vis;if(vis){d.style.left=((v.x+1)/2*r.width)+'px';d.style.top=((1-v.y)/2*r.height)+'px';}});
   labelsEl.querySelectorAll('.tag').forEach(d=>{if(!seen.has(d.dataset.id))d.remove();});
