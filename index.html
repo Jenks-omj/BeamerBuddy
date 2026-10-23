@@ -55,6 +55,23 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
 .btn.ghost{background:transparent}
 .btn.sm{padding:3px 8px;font-size:12px}
 .btn.danger{color:var(--bad)}
+.helpbtn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--edge);background:transparent;color:var(--muted);font:600 10px/1 var(--f-body);cursor:pointer;padding:0;margin-left:5px;vertical-align:1px;text-transform:none;letter-spacing:0;flex:none}
+.helpbtn:hover,.helpbtn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
+.fldt{font-style:normal;display:inline-flex;align-items:center}
+.helppop{position:fixed;z-index:40;background:var(--raise);border:1px solid var(--accent);border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-size:13px;line-height:1.45;color:var(--ink)}
+.helppop b{display:block;font-family:var(--f-disp);letter-spacing:.05em;text-transform:uppercase;font-size:13px;margin-bottom:4px}.helppop p{margin:0}
+.verdict{margin:0;font-size:13px;line-height:1.4;padding:7px 9px;border-radius:6px;background:var(--raise);border:1px solid var(--line)}.verdict:empty{display:none}
+.modal .box.wzbox{width:min(760px,100%)}
+.wzsteps{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--f-disp);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wzsteps span{padding:2px 8px;border-radius:10px;border:1px solid var(--line)}.wzsteps .on{color:var(--on-accent);background:var(--accent);border-color:var(--accent)}.wzsteps .done{color:var(--ink)}
+.wzbody{display:flex;flex-direction:column;gap:8px}
+.wzq{margin:8px 0 0;font-size:16px;font-weight:600}
+.wzgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.wzcard{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--raise);cursor:pointer;color:var(--ink);font:inherit}
+.wzcard b{font-size:14px}.wzcard span{font-size:12px;color:var(--muted);line-height:1.35}
+.wzcard:hover{border-color:var(--edge)}.wzcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.wzresult p{margin:0 0 8px;line-height:1.5}.wzflags{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
+.wznav{margin-top:6px}
 #guideBtn[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--bg)}
 .ghelp{background:var(--surface);border:1px solid var(--bad);border-left-width:3px;border-radius:6px;padding:8px 10px;width:330px;max-width:100%;font-size:12px;line-height:1.35;pointer-events:auto}
 .ghelp b{display:block;font-family:var(--f-disp);letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--bad);margin-bottom:4px}
@@ -190,6 +207,7 @@ textarea{width:100%;min-height:200px;font-family:var(--f-mono);font-size:11.5px;
         <option value="theatre">Proscenium theatre with balcony</option>
         <option value="curve">Curved screen, 2.39:1</option>
       </select>
+      <button class="btn pri" id="wizBtn" title="Answer a few plain questions and get a working mockup with a projector picked for you">Start here</button>
       <button class="btn" id="fileBtn">Save / load</button>
       <button class="btn" id="skpBtn">Export to SketchUp</button>
       <button class="btn" id="resetBtn">Reset</button>
@@ -1395,7 +1413,7 @@ const pct=v=>`${(v*100).toFixed(v<.1&&v>0?1:0)}%`;
 function drawLegend(){
   const lg=$('#legend');lg.innerHTML='';
   if(S.view==='lum'){
-    const [a,b]=scaleRange();lg.append(el('div','lbl',S.lumUnit==='lux'?'Illuminance on surface (lux)':`Surface luminance (${lumUnitLabel()})`));
+    const [a,b]=scaleRange();const lt=el('div','lbl',S.lumUnit==='lux'?'Illuminance on surface (lux)':`Surface luminance (${lumUnitLabel()})`);lt.append(' ',help('heat'));lg.append(lt);
     const c=el('canvas');c.width=260;c.height=12;const x=c.getContext('2d');for(let i=0;i<260;i++){const cc=ramp(i/259);x.fillStyle=`rgb(${cc.map(v=>v*255|0)})`;x.fillRect(i,0,1,12);}lg.append(c);
     const tk=el('div','ticks');const vals=S.lumUnit==='lux'?[3,10,30,100,300,1000,3000]:[1,3,10,30,100,300,1000];
     vals.forEach(v=>{const s=el('span');s.style.left=(tFor(v)*100)+'%';s.textContent=S.lumUnit==='fl'?(v/NITS_PER_FL).toFixed(v<10?1:0):v;tk.append(s);});
@@ -1418,7 +1436,8 @@ function changed(kind){
   if(kind==='obj'||kind==='surf'){dirty.objs=true;}
   dirty.compute=true;save();
 }
-function fld(label,input,opts={}){const w=el('label','fld'+(opts.wide?' wide':''));const s=el('span');s.textContent=label;if(opts.ro){const em=el('em');em.dataset.ro=opts.ro;s.append(em);}w.append(s,input);return w;}
+function fld(label,input,opts={}){const w=el('label','fld'+(opts.wide?' wide':''));const s=el('span');s.textContent=label;
+  const hk=opts.help||(HELP_BY_LABEL.find(([re])=>re.test(label))||[])[1];if(hk){const t=el('i','fldt');t.append(...s.childNodes,help(hk));s.append(t);}if(opts.ro){const em=el('em');em.dataset.ro=opts.ro;s.append(em);}w.append(s,input);return w;}
 function num(obj,key,{kind='len',step,min,max,id,on='obj',after,onClamp}={}){
   const i=el('input');i.type='number';i.id=id||('f-'+(obj.id||'g')+'-'+key);
   const toV=v=>kind==='len'?+toD(v).toFixed(3):v;const fromV=v=>kind==='len'?fromD(v):v;
@@ -1589,6 +1608,7 @@ function renderProj(){
   r.append(btn('Aim at target',()=>{fitProj(p,'aim');}),btn('Zoom to fill',()=>{fitProj(p,'fill');}),btn('Zoom to fit inside',()=>{fitProj(p,'fit');}),btn('Move to fill distance',()=>{fitProj(p,'move');}),btn('Place level for target',()=>{fitProj(p,'place');}));
   fit.append(r);
   const out=el('dl','readout');out.dataset.ro='pread';fit.append(out);
+  const pv=el('p','verdict');pv.dataset.ro='pverdict';e.append(pv);
   const lmn=el('p','note');lmn.dataset.ro='plm';fit.append(lmn);
   const w=el('ul','msgs');w.dataset.ro='pwarn';fit.append(w);
   const sug=el('div','sec');sug.dataset.ro='psug';fit.append(sug);
@@ -1692,6 +1712,7 @@ function renderScr(){
   r.append(btn('On front wall',()=>{x.z=.05;x.yaw=0;x.tilt=0;changed('surf');render();}),btn('On left wall',()=>{x.x=.05;x.yaw=90;x.tilt=0;changed('surf');render();}),btn('On right wall',()=>{x.x=W.W-.05;x.yaw=-90;x.tilt=0;changed('surf');render();}),btn('Lay flat on floor',()=>{x.tilt=-90;x.elev=.01;changed('surf');render();}));
   pos.append(r);
   pos.append(el('p','note','Yaw 0° faces +Z (toward the audience from the front wall). Tilt rotates about the bottom edge; −90° lays the surface on the floor. Concave curves wrap toward the side the screen faces. Curves sets the direction: left to right, top to bottom (the top and bottom edges come toward you), or both ways as a dish. Widen a left-to-right curve to 2πR for a full panorama.'));
+  const sv=el('p','verdict');sv.dataset.ro='sverdict';pos.append(sv);
   const out=el('dl','readout');out.dataset.ro='sread';pos.append(out);
   const w=el('ul','msgs');w.dataset.ro='swarn';pos.append(w);
   panel.append(e,pos);
@@ -1927,7 +1948,7 @@ function updateReadouts(){
     setRO('pread',`<dt>Throw distance</dt><dd>${fmtLen(d)}</dd><dt>Image at throw</dt><dd>${d?fmtLen(q.Wc*d)+' × '+fmtLen(q.Hc*d):'—'}</dd><dt>Image diagonal</dt><dd>${d?fmtLen(Math.hypot(q.Wc,q.Hc)*d):'—'}</dd><dt>Effective lumens</dt><dd>${Math.round(q.lm).toLocaleString()} lm</dd><dt>Lumens on content</dt><dd>${Math.round(q.lmContent).toLocaleString()} lm</dd><dt>Lands on</dt><dd>${st.tgt?esc(st.tgt.label):'nothing'}</dd><dt>Average on it</dt><dd>${st.tgt?fmtL(st.avg,st.tgt.gain):'—'}</dd><dt>Off-axis angle</dt><dd>${st.keystone!=null?st.keystone.toFixed(1)+'°':'—'}</dd>${fitTxt}`);
     {const lf=q.lens.lm||1;const parts=[`× ${S.derate}% lumen derate (Venue → Light & planning) for ageing and real-world output`];if(lf!==1)parts.push(`× ${Math.round(lf*100)}% for this lens`);if(+p.out!==100)parts.push(`× ${p.out}% light output`);
       setRO('plm',`Brightness is calculated from ${Math.round(q.lm).toLocaleString()} lm, not the ${(+q.m.lm).toLocaleString()} lm spec: ${parts.join(', ')}.`);}
-    setRO('pshift',shiftMeter(p));
+    setRO('pshift',shiftMeter(p));setRO('pverdict',projVerdict(p));
     const ws=projWarnings(p).concat(stats.warn.filter(w=>w.t.includes(' '+p.name+' ')));setRO('pwarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));
     if(s)setRO('psug',lensSuggest(p,s));else setRO('psug','');
   }
@@ -1938,7 +1959,7 @@ function updateReadouts(){
     setRO('sread',`<dt>Area</dt><dd>${S.units==='ft'?(x.w*x.h*FT*FT).toFixed(1)+' ft²':(x.w*x.h).toFixed(1)+' m²'}</dd><dt>Chord width</dt><dd>${fmtLen(chordOf(x))}</dd>${arcVOf(x)?`<dt>Chord height</dt><dd>${fmtLen(chordHOf(x))}</dd>`:''}<dt>Covered</dt><dd>${pct(st.cov)}</dd><dt>Average</dt><dd>${fmtL(st.avg,x.gain)}</dd><dt>Min – max</dt><dd>${fmtL(st.mn,x.gain)} – ${fmtL(st.mx,x.gain)}</dd><dt>Uniformity</dt><dd>${pct(u)}</dd><dt>Blend overlap</dt><dd>${pct(st.ov)}</dd><dt>Shadowed by people</dt><dd>${pct(st.shd)}</dd><dt>Contrast at ${S.ambient} lx</dt><dd>${isFinite(st.contrast)?st.contrast.toFixed(0)+':1':'∞'}</dd><dt>Aimed here</dt><dd>${hitters.length?esc(hitters.join(', ')):'—'}</dd>`);
     const ws=[];if(st.shadowBy)S.people.forEach((h,i)=>{if(st.shadowBy[i]>0)ws.push({lvl:'bad',t:`${personLabel(h,i)} shadows ${pct(st.shadowBy[i]/st.sf.N)} of this screen.`});});
     if(st.cov>0&&st.avg<S.target*.7)ws.push({lvl:'warn',t:`Below the ${fmtL(S.target,x.gain)} target.`});else if(st.cov>0)ws.push({lvl:'ok',t:`Average is ${(st.avg/S.target*100).toFixed(0)}% of the target.`});
-    setRO('swarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));}
+    setRO('sverdict',screenVerdict(x));setRO('swarn',ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''));}
   if(tab==='ppl'){const ws=[];S.people.forEach((h,i)=>{S.screens.forEach(x=>{const st=stats.scr[x.id];if(st&&st.shadowBy&&st.shadowBy[i]>0)ws.push({lvl:'bad',t:`${personLabel(h,i)} shadows ${x.name} (${pct(st.shadowBy[i]/st.sf.N)}).`});});});
     stats.warn.forEach(w=>ws.push(w));setRO('pplsum',ws.length?ws.map(w=>`<li class="${w.lvl}">${esc(w.t)}</li>`).join(''):(S.people.length?'<li class="ok">Nobody blocks a beam or stands in one.</li>':''));}
   if(tab==='rep')buildReportTables();
@@ -2440,6 +2461,197 @@ function preset(name){
 }
 function fitTemp(p,s){const c=screenWorld(s,.5,.5).p;aimAt(p,c);const q=prep().find(x=>x.p===p);const dist=lensPos(p).distanceTo(c);const tr=dist/Math.max(chordOf(s)/(q.Wc/q.W1),chordHOf(s)/(q.Hc/q.W1));const [a,b]=lensRange(p);p.zoom=clamp((tr-a)/(b-a),0,1);}
 
+/* ============================== PLAIN-LANGUAGE HELP ============================== */
+/* a ⓘ next to the jargon: one or two plain sentences and an everyday example. Lengths follow the current units */
+const u1=()=>S.units==='ft'?'3 ft':'1 m',u15=()=>S.units==='ft'?'4.5 ft':'1.5 m';
+const HELP={
+  lumens:{t:'Lumens',d:()=>'How much light the projector puts out in total. More lumens let you make a bigger image, or keep it bright in a room with some light. Doubling the image width needs about four times the lumens.'},
+  nits:{t:'Brightness on the image (nits, fL, lux)',d:()=>'Nits (and foot-lamberts) are how bright the image looks to a visitor. Lux is how much light lands on the surface. A cinema is around 50 nits, a dim gallery projection 100–150, a lit lobby needs 300 or more.'},
+  target:{t:'Target brightness',d:()=>'How bright you want the image to look. The heatmap and the warnings compare every point against it. Darker rooms need a lower target: 60–120 nits in blackout or a dim gallery, 300+ with room light.'},
+  ambient:{t:'Room light (ambient)',d:()=>'Light in the room that isn’t from the projector: spotlights, exit signs, daylight. It doesn’t make the image dimmer, but it lifts the blacks to grey, so the image looks washed out. Less room light = more contrast.'},
+  derate:{t:'Lumen derate',d:()=>'Projectors rarely reach their spec-sheet lumens once colour is calibrated and the lamp or laser ages. The derate scales every projector down to a realistic figure; 80–85% is a common planning number.'},
+  uniformity:{t:'Uniformity',d:()=>'Images are brighter in the middle than at the corners. 90% means the corners get about 90% of the centre’s light.'},
+  gain:{t:'Surface gain',d:()=>'How much light a surface reflects back toward the audience, compared with a matte white screen (1.0). White paint is about 0.8–0.9, grey 0.3–0.5, black about 0.05. Higher gain looks brighter.'},
+  contrast:{t:'Contrast',d:()=>'How much brighter the image’s whites are than the room-lit blacks. Over 50:1 looks rich; under 10:1 looks washed out.'},
+  throw:{t:'Throw ratio and zoom',d:()=>`How far back the projector stands for each unit of image width. A 1.5:1 lens needs to be ${u15()} back for every ${u1()} of image width. A zoom lens covers a range, and the slider picks a point in it.`},
+  shift:{t:'Lens shift',d:()=>'Slides the picture up, down or sideways without tilting the projector, so the image stays rectangular. V is up/down in % of image height, H is sideways in % of image width. Every lens has a limit; the app warns when you reach it.'},
+  offset:{t:'Fixed lens offset',d:()=>'Some projectors (especially short-throw ones) can’t shift: their image always sits a set amount above the lens. They’re installed level, at the height that offset needs.'},
+  mount:{t:'Mounting',d:()=>'How the projector is installed: upright on a table, upside down from the ceiling, or on its side for a tall (portrait) image. Not every model can do every mount; the list greys out the ones it can’t.'},
+  output:{t:'Light output',d:()=>'Runs the projector below full power (eco mode, or dimmed to match another projector). 100% is full brightness.'},
+  keystone:{t:'Off-axis and keystone',d:()=>'When a projector isn’t square to the surface the picture becomes a trapezoid ("keystone") and one side is dimmer. Small angles can be corrected digitally; big ones lose resolution and brightness.'},
+  content:{t:'Content aspect',d:()=>'The shape of your artwork. If it doesn’t match the projector’s chip, the picture uses part of the frame (with black bars) and the rest of the light is wasted.'},
+  edges:{t:'Image edges',d:()=>'Shows where each projector’s picture lands, outlined in its colour, so you can see coverage and gaps at a glance.'},
+  blend:{t:'Overlap and blending',d:()=>'Where two projectors overlap, their light adds up. Media servers fade each edge so the join is invisible; the overlap view shows where that happens.'},
+  shadow:{t:'Shadows',d:()=>'People and objects between a projector and the image block the light. The app checks every person and instrument you place and darkens the patches they shadow.'},
+  quality:{t:'Resolution (sample density)',d:()=>'How finely the app measures light across surfaces. Fine is more accurate; Draft is faster on slow computers. It doesn’t change the projector.'},
+  guides:{t:'Guides',d:()=>'Dotted lines on the floor at set distances from the walls, like tape on the floor of the space. Dragged objects snap onto them.'},
+  heat:{t:'Reading the heatmap',d:()=>'Colours show how bright each spot looks: dark purple is dim, orange to pale yellow is bright. The ▼ on the scale marks your target; you want the image at or a little above it, and as even as possible.'}};
+/* fields get their ⓘ from their label */
+const HELP_BY_LABEL=[[/^Lumens/,'lumens'],[/^Target \(nits\)/,'target'],[/^Ambient/,'ambient'],[/^Lumen derate/,'derate'],[/^Uniformity/,'uniformity'],[/gain$/i,'gain'],
+  [/^Zoom/,'throw'],[/^Lens shift/,'shift'],[/^Mounting$/,'mount'],[/^Light output/,'output'],[/^Content aspect/,'content'],[/^Resolution/,'quality']];
+const helpPop=el('div','helppop');helpPop.hidden=true;helpPop.setAttribute('role','dialog');document.body.append(helpPop);let helpFor=null;
+function closeHelp(){helpPop.hidden=true;if(helpFor)helpFor.setAttribute('aria-expanded','false');helpFor=null;}
+function help(key){const b=el('button','helpbtn','?');b.type='button';b.setAttribute('aria-label','What is '+HELP[key].t+'?');b.setAttribute('aria-expanded','false');
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(helpFor===b){closeHelp();return;}closeHelp();const h=HELP[key];
+    helpPop.innerHTML=`<b>${esc(h.t)}</b><p>${esc(h.d())}</p>`;helpPop.hidden=false;helpFor=b;b.setAttribute('aria-expanded','true');
+    const r=b.getBoundingClientRect(),w=Math.min(300,innerWidth-24);helpPop.style.width=w+'px';helpPop.style.left=clamp(r.left-w/2+r.width/2,12,innerWidth-w-12)+'px';
+    const below=r.bottom+8,ph=helpPop.offsetHeight;helpPop.style.top=(below+ph>innerHeight-8?Math.max(8,r.top-ph-8):below)+'px';});
+  return b;}
+document.addEventListener('click',e=>{if(helpFor&&!helpPop.contains(e.target))closeHelp();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&helpFor)closeHelp();});
+window.addEventListener('resize',closeHelp);document.addEventListener('scroll',closeHelp,true);
+
+/* ---------- plain verdicts next to the numbers ---------- */
+function projVerdict(p){const st=stats.proj[p.id];if(!st)return '';if(!st.q.on)return '<span class="muted">Switched off.</span>';
+  if(!st.tgt)return '<span class="bad">Not hitting a surface yet.</span> Use “Aim at target”.';
+  const k=st.avg/S.target,b=k>=1?`<span class="ok">Bright enough</span>${k>1.6?' with plenty to spare':k>1.15?' with some headroom':''}`
+    :k>=.8?`<span class="warn">A little dim</span>, about ${Math.round((1-k)*100)}% under the target`:`<span class="bad">Too dim for this light</span>, about ${Math.round((1-k)*100)}% under the target`;
+  const ang=st.keystone==null?'':st.keystone<=8?'square to the surface':st.keystone<=20?'a little angled to the surface':'<span class="warn">strongly angled</span>: the image will be keystoned';
+  const sh=shiftState(p),bits=[b,ang];if(sh&&sh.max)bits.push('<span class="warn">at the limit of its lens shift</span>');
+  if(projWarnings(p).some(w=>w.lvl==='bad'))bits.push('<span class="bad">see the warnings below</span>');
+  return bits.filter(Boolean).join(' · ')+'.';}
+function screenVerdict(x){const st=stats.scr[x.id];if(!st)return '';if(!st.cov)return '<span class="warn">No projection reaches it yet.</span>';
+  const k=st.avg/S.target,u=st.mn>0?st.mx/st.mn:Infinity;
+  const b=k>=1?'<span class="ok">Bright enough</span>':k>=.8?'<span class="warn">A little dim</span>':'<span class="bad">Too dim</span>';
+  const ev=u<=1.6?'evenly lit':u<=3?'a little uneven':`<span class="warn">patchy</span>: the brightest spot is ${isFinite(u)?u.toFixed(0)+'×':'far brighter than'} the dimmest`;
+  const cov=st.cov>=.98?'fully covered':`<span class="warn">${pct(1-st.cov)} not covered</span>`;
+  return `${b}, ${ev}, ${cov}${st.shd>.001?', <span class="warn">with shadows on it</span>':''}.`;}
+
+/* ============================== START HERE: setup wizard ============================== */
+/* plain questions in, one projector + lens out, with the reasons and a few alternatives. Single projector for now */
+const WZ_ROOMS={small:{t:'Small room',d:'about 6 × 8 m, 3 m high: a project space or small gallery',W:6,L:8,H:3},
+  medium:{t:'Medium room',d:'about 9 × 12 m, 4 m high: a typical gallery',W:9,L:12,H:4},
+  large:{t:'Large room',d:'about 15 × 20 m, 6 m high: a hall or big white cube',W:15,L:20,H:6}};
+const WZ_LIGHT={blackout:{t:'Blackout',d:'like a cinema: no light except the projection',amb:.1,target:60},
+  dim:{t:'Dim gallery',d:'like a museum room with a few spotlights on other works',amb:1,target:120},
+  some:{t:'Some light',d:'like a lobby or a room with daylight kept out but lights on',amb:20,target:300},
+  bright:{t:'Bright',d:'normal room lighting or daylight; projection will look washed out',amb:400,target:600}};
+const WZ_ASPECT={'16:9':1.78,'4:3':1.33,'1:1':1,'2.39:1':2.39,'9:16':.5625};
+let WZ=null;
+function wzDefaults(){return {step:0,space:'gallery',room:'medium',W:9,L:12,H:4,surface:'wall',fill:true,width:4,aspect:'16:9',light:'dim',place:'back'};}
+/* the scene the answers describe, without a projector yet */
+function wzScene(a){const ns=baseState();ns.units=S?S.units:'ft';ns.lib=LIB;ns.wizard={...a};ns.name='My mockup';S=ns;
+  const L=WZ_LIGHT[a.light];S.ambient=L.amb;S.target=L.target;
+  if(a.space==='theatre'){S.mode='theatre';S.th=thDefaults();}
+  else if(a.space==='outdoor'){S.mode='outdoor';}
+  else{S.mode='indoor';S.room={...S.room,W:a.W,L:a.L,H:a.H};}
+  const {W,L:Ln}=siteDims(),asp=WZ_ASPECT[a.aspect]||1.78,g=S.mode==='theatre'?thG():null;
+  const Hroom=S.mode==='indoor'?S.room.H:S.mode==='theatre'?S.th.flyH:12;
+  /* how wide the image can be: "fill" uses most of the wall (or floor) without running into the ceiling */
+  /* a floor image seen from overhead can only be as wide as a short lens reaches from the ceiling (about 0.7 × the height) */
+  let w=a.fill?(a.surface==='floor'?Math.min(W*.6,Ln*.5*asp,(Hroom-.35)/.7):S.mode==='theatre'?S.th.stageW*.8:W*.85):fromD(+a.width||1);
+  const elev=a.surface==='floor'?.01:S.mode==='theatre'?.3:a.surface==='screen'?.6:.5;
+  if(a.surface!=='floor'){const room=Hroom-elev-.3;if(w/asp>room)w=room*asp;}
+  w=Math.max(.3,+w.toFixed(2));const h=+(w/asp).toFixed(2);
+  const cx=g?g.cx:W/2;let sc;
+  if(a.surface==='floor'){const zc=S.mode==='theatre'?g.zP*.5:Math.min(Ln*.45,Ln-h/2-.5);sc=newScreen({name:'Floor image',w,h,aspect:'custom',x:cx,z:+(zc+h/2).toFixed(3),elev:.01,tilt:-90,gain:.6});}
+  else{const z=a.surface==='screen'?(S.mode==='theatre'?g.zP-1.2:1.5):S.mode==='theatre'?.4:.04;
+    sc=newScreen({name:a.surface==='screen'?'Screen':'Wall image',w,h,aspect:'custom',x:cx,z,elev,gain:a.surface==='screen'?1:.85});}
+  S.screens.push(sc);return sc;}
+/* where the projector starts for each answer; 'close' is placed later from the lens (Place level for target) */
+function wzSpot(a,sc){const {W,L}=siteDims(),c=screenWorld(sc,.5,.5).p,g=S.mode==='theatre'?thG():null;
+  const H=S.mode==='indoor'?S.room.H:S.mode==='theatre'?S.th.houseH:6,w=chordOf(sc);
+  if(a.place==='down')return {x:c.x,z:c.z,h:H-.35,lvl:'floor'};
+  if(a.place==='ceiling'){const z=S.mode==='theatre'?g.zA+S.th.houseL*.3:Math.min(c.z+Math.max(2.5,w*1.3),L-.6);return {x:c.x,z,h:H-.35,lvl:'floor'};}
+  if(S.mode==='theatre')return S.th.bal?{x:g.cx,z:g.L-.7,h:Math.min(2.6,S.th.houseH-S.th.balH-.5),lvl:'balcony'}:{x:g.cx,z:g.L-.7,h:3,lvl:'floor'};
+  if(S.mode==='outdoor')return {x:c.x,z:Math.min(L-1,c.z+Math.max(10,w*2)),h:3,lvl:'floor'};
+  return {x:c.x,z:L-.6,h:Math.min(2.5,H-.3),lvl:'floor'};}
+/* spec-sheet lumens a body needs to average the target on this surface, after the derate and a picture that may not fill the chip */
+function wzLumens(sc,target,m,content){const asp=m.rw/m.rh,ca=aspectVal(content)||asp,frac=ca>=asp?asp/ca:ca/asp;
+  return target*PI*chordOf(sc)*chordHOf(sc)/(sc.gain||1)/(S.derate/100)/frac;}
+/* every catalog body + lens that can do the job from this spot, best first; one entry per body (its best lens) */
+function pickProjector(sc,spot,a){const out=[],probe={...newProjector(),...spot,content:String(WZ_ASPECT[a.aspect]||'native'),lens:''};
+  const close=a.place==='close',down=a.place==='down',c=screenWorld(sc,.5,.5).p;
+  const L0=V(spot.x,baseAt(spot.x,spot.z,spot.lvl)+spot.h,spot.z),dist=L0.distanceTo(c),above=a.place==='ceiling'||down;
+  for(const m of MODELS){if(m.custom)continue;const o=orientOf(m);
+    if(above&&!mountOK(o,'ceiling'))continue;/* would have to hang upside down */
+    if(down&&!(o&&o.free))continue;/* pointing straight down needs a body rated for any tilt */
+    if(o&&!o.free&&o.tilt!=null&&!down){const pitch=Math.abs(Math.atan2(c.y-L0.y,Math.hypot(c.x-L0.x,c.z-L0.z))/D2R);if(pitch>o.tilt)continue;}
+    const need=needFor(m,probe,sc,dist),req=wzLumens(sc,S.target,m,probe.content);let best=null;
+    for(const l of lensesFor(m)){if(l.custom||l.user)continue;const r=lensRangeFor(l,m,probe),lm=m.lm*(l.lm||1);if(lm<req)continue;
+      if(close){if(r[0]>.9)continue;}else if(!reaches(r,need))continue;
+      const k=lm/req,mid=r[1]>r[0]?Math.abs((close?r[0]:need)-(r[0]+r[1])/2)/((r[1]-r[0])/2):0;
+      const sc0=Math.abs(Math.log(k/1.3))+.25*mid+(close?r[0]:0)+(m.unc?.3:0)+(l.est?.2:0);
+      if(!best||sc0<best.score)best={m,l,r,need,req,lm,score:sc0};}
+    if(best)out.push(best);}
+  return out.sort((x,y)=>x.score-y.score);}
+/* the pick plus up to three alternatives from other makers or another brightness tier */
+function wzChoices(list){if(!list.length)return [];const res=[list[0]],seen=new Set([list[0].m.mfr]);
+  for(const c of list){if(res.length>=4)break;if(!seen.has(c.m.mfr)){res.push(c);seen.add(c.m.mfr);}}
+  for(const c of list){if(res.length>=4)break;if(!res.includes(c)&&res.every(x=>x.m.series!==c.m.series||x.m.mfr!==c.m.mfr))res.push(c);}
+  return res;}
+/* put the chosen body in the scene, mount it, aim and zoom */
+function wzBuild(a,sc,spot,ch){S.projectors=[];const p=newProjector({name:'P1',model:ch.m.id,lens:ch.l.id,...spot,target:sc.id,autoMount:true,roll:0,content:String(WZ_ASPECT[a.aspect]||'native'),color:COLORS[0]});
+  p.shiftV=restShift(ch.m,ch.l);p.shiftH=0;S.projectors.push(p);S.sel={kind:'proj',id:p.id};
+  /* on a shelf or stand it sits upright; on the ceiling Auto hangs it the right way */
+  if(a.place==='back'||a.place==='close')p.autoMount=false;else applyAutoMount(p,true);fitProj(p,a.place==='close'?'place':'fill');
+  return p;}
+function wzRun(a){const sc=wzScene(a),spot=wzSpot(a,sc),list=pickProjector(sc,spot,a),ch=wzChoices(list);
+  WZ.sc=sc;WZ.spot=spot;WZ.choices=ch;WZ.pick=ch[0]||null;
+  if(WZ.pick)wzBuild(a,sc,spot,WZ.pick);else S.projectors=[];
+  changed('surf');syncHeader();buildSurfaces();buildObjects();compute();}
+function wzWhy(a){const ch=WZ.pick,sc=WZ.sc,L=WZ_LIGHT[a.light];
+  const img=`${fmtLen(chordOf(sc))} × ${fmtLen(chordHOf(sc))}`;
+  if(!ch){const req=wzLumens(sc,S.target,{rw:16,rh:9},'1.78'),maxLm=Math.max(...MODELS.filter(m=>!m.custom).map(m=>m.lm));
+    const tips=[req>maxLm?`Even the brightest projector in the catalog (${maxLm.toLocaleString()} lm) can’t light ${img} to ${L.t.toLowerCase()} levels: make the image smaller or the room darker.`:'',
+      'Try another spot for the projector (closer, or overhead), a smaller image, or a darker room.'];
+    return `<p><b>Nothing in the catalog fits these answers.</b></p><p class="note">Your image is ${img} in ${L.t.toLowerCase()} light, so it needs roughly ${(Math.round(req/1000)*1000).toLocaleString()} lumens.</p>${tips.filter(Boolean).map(t=>`<p class="note">${esc(t)}</p>`).join('')}`;}
+  const p=S.projectors[0],st=stats.proj[p.id],q=st&&st.q,mk=mountOf(p),dist=st&&st.dist;
+  const flags=[];if(mk==='ceiling')flags.push('It hangs upside down (ceiling mount); the app flips the picture for you.');
+  if(isPortrait(mk))flags.push('It runs on its side (portrait).');
+  if(Math.abs(p.shiftV)>.5||Math.abs(p.shiftH)>.5)flags.push(`It uses lens shift (${pctS(p.shiftV)} up/down) to line the picture up without tilting.`);
+  if(st&&st.keystone>12)flags.push(`It meets the surface at ${st.keystone.toFixed(0)}°, so expect some keystone correction.`);
+  if(a.light==='bright')flags.push('The room is bright: blacks will look grey. Darken the room if you can.');
+  if(a.aspect==='9:16')flags.push('A portrait image uses the middle of a landscape projector’s frame. A projector turned on its side would be brighter, if the model allows it.');
+  const where={back:'from the back of the room',ceiling:'from the ceiling',close:'close to the wall',down:'from overhead, pointing down'}[a.place];
+  const got=st&&st.avg?` It should reach about ${fmtL(st.avg,sc.gain)} on the image (you asked for ${fmtL(S.target,sc.gain)}).`:'';
+  return `<p>Your image is <b>${img}</b> in <b>${L.t.toLowerCase()}</b> light, so it needs about <b>${(Math.round(ch.req/100)*100).toLocaleString()} lumens</b>.</p>
+    <p>${esc(where[0].toUpperCase()+where.slice(1))}, ${dist?fmtLen(dist)+' away, ':''}that needs a lens with a throw ratio near <b>${(q?q.tr:ch.need).toFixed(2)}:1</b>.</p>
+    <p>We chose the <b>${esc(ch.m.mfr)} ${esc(ch.m.name)}</b> (${ch.m.lm.toLocaleString()} lm) with the <b>${esc(ch.l.name.split(' (')[0])}</b> lens: bright enough with some headroom, and the lens covers that distance.${got}</p>
+    ${flags.length?`<ul class="wzflags">${flags.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>`:''}`;}
+function wzCard(title,desc,on,fn,dis){const b=el('button','wzcard');b.type='button';b.setAttribute('aria-pressed',on?'true':'false');if(dis){b.disabled=true;}
+  b.append(el('b','',esc(title)),el('span','',esc(desc)));b.addEventListener('click',fn);return b;}
+function openWizard(){if(!WZ)WZ=Object.assign(wzDefaults(),S&&S.wizard?{...S.wizard,step:0}:{});WZ.step=0;try{localStorage.setItem('throwline:wizardSeen','1');}catch(e){}wzRender();}
+function wzClose(){$('#modal').hidden=true;try{localStorage.setItem('throwline:wizardSeen','1');}catch(e){}}
+function wzRender(){const a=WZ;const steps=['Space','Surface','Light','Projector','Result'];
+  openModal('Start here',b=>{b.classList.add('wzbox');
+    const ind=el('div','wzsteps');steps.forEach((t,i)=>{const s=el('span',i===a.step?'on':i<a.step?'done':'',`${i+1}. ${t}`);ind.append(s);});b.append(ind);
+    const body=el('div','wzbody');b.append(body);const grid=()=>{const g=el('div','wzgrid');body.append(g);return g;};
+    const set=(k,v)=>{a[k]=v;wzRender();};
+    if(a.step===0){body.append(el('p','wzq','Where will the artwork be shown?'));const g=grid();
+      [['gallery','Gallery or room','A room with walls: gallery, studio, project space'],['theatre','Theatre','A stage with a proscenium and seating'],['outdoor','Outdoors','A field, courtyard or building front'],['model','I have a SketchUp model','Import your own venue from SketchUp']].forEach(([v,t,d])=>g.append(wzCard(t,d,a.space===v,()=>set('space',v))));
+      if(a.space==='gallery'){body.append(el('p','wzq','How big is the room?'));const g2=grid();
+        Object.entries(WZ_ROOMS).forEach(([k,r])=>g2.append(wzCard(r.t,r.d,a.room===k,()=>{a.room=k;a.W=r.W;a.L=r.L;a.H=r.H;wzRender();})));
+        g2.append(wzCard('Exact size','type the width, length and height',a.room==='exact',()=>set('room','exact')));
+        if(a.room==='exact'){const r=el('div','grid3');r.append(fld('Width',num(a,'W',{min:2,max:200,on:'none',id:'wz-W'})),fld('Length',num(a,'L',{min:2,max:200,on:'none',id:'wz-L'})),fld('Height',num(a,'H',{min:2,max:60,on:'none',id:'wz-H'})));body.append(r);}}
+      if(a.space==='model')body.append(el('p','note','Import your model in Venue → Imported model, then come back here, or set up the projector yourself on the Projectors tab.'));}
+    else if(a.step===1){body.append(el('p','wzq','What are you projecting onto?'));const g=grid();
+      [['wall','A wall','straight onto a painted wall'],['screen','A screen','a free-standing screen or panel'],['floor','The floor','a picture on the floor, seen from above']].forEach(([v,t,d])=>g.append(wzCard(t,d,a.surface===v,()=>{a.surface=v;if(v!=='floor'&&a.place==='down')a.place='ceiling';if(v==='floor')a.place='down';wzRender();})));
+      body.append(el('p','wzq','How big should the image be?'));const g2=grid();
+      g2.append(wzCard(a.surface==='floor'?'As big as fits':'Fill the wall','the largest image that fits the space',a.fill,()=>set('fill',true)),wzCard('A set width','type how wide it should be',!a.fill,()=>set('fill',false)));
+      if(!a.fill){const r=el('div','grid3');r.append(fld('Image width',num(a,'width',{kind:'n',step:.5,min:.3,max:200,on:'none',id:'wz-w'}),{ro:'wzu'}));body.append(r);setTimeout(()=>setRO('wzu',S.units),0);}
+      body.append(el('p','wzq','What shape is the artwork?'));const g3=grid();
+      [['16:9','Widescreen 16:9','most video'],['4:3','4:3','older video, many photos'],['1:1','Square','1:1'],['2.39:1','Cinema wide','2.39:1'],['9:16','Portrait','9:16, phone-shaped']].forEach(([v,t,d])=>g3.append(wzCard(t,d,a.aspect===v,()=>set('aspect',v))));}
+    else if(a.step===2){body.append(el('p','wzq','How much light will be in the room?'));const g=grid();
+      Object.entries(WZ_LIGHT).forEach(([k,l])=>g.append(wzCard(l.t,l.d,a.light===k,()=>set('light',k))));
+      body.append(el('p','note','Darker rooms need far less projector. Every bit of room light that falls on the image greys out the blacks.'));}
+    else if(a.step===3){body.append(el('p','wzq','Where can the projector go?'));const g=grid();
+      const opts=a.surface==='floor'?[['down','Overhead, pointing down','hung from the ceiling above the floor image'],['ceiling','On the ceiling, angled','hung from the ceiling to one side']]
+        :[['back','Behind the audience','at the back of the room, on a shelf or stand above heads'],['ceiling','On the ceiling','hung upside down between the audience and the image'],['close','Close to the wall','a short-throw projector just in front of the image']];
+      opts.forEach(([v,t,d])=>g.append(wzCard(t,d,a.place===v,()=>set('place',v))));}
+    else{const r=el('div','wzresult');r.innerHTML=wzWhy(a);body.append(r);
+      if(WZ.choices.length>1){body.append(el('p','wzq','Other projectors that would work'));const g=el('div','sugl');
+        WZ.choices.slice(1).forEach(c=>{const row=el('div','row');const u=btn('Use this instead',()=>{WZ.pick=c;wzBuild(a,WZ.sc,WZ.spot,c);changed('obj');buildObjects();compute();wzRender();});
+          const why=c.m.lm>WZ.pick.m.lm*1.4?'brighter, more headroom':c.m.lm<WZ.pick.m.lm*.75?'smaller and lighter, less headroom':'similar brightness';
+          row.append(u,el('span','',`<b>${esc(c.m.mfr)} ${esc(c.m.name)}</b> · ${c.m.lm.toLocaleString()} lm · ${esc(c.l.name.split(' (')[0])} · ${why}`));g.append(row);});body.append(g);}}
+    const nav=el('div','row wznav');
+    if(a.step>0)nav.append(btn('Back',()=>{a.step--;wzRender();},'btn'));else nav.append(btn('Skip',()=>{wzClose();},'btn ghost'));
+    const sp=el('span');sp.style.flex='1';nav.append(sp);
+    if(a.step<3)nav.append(btn('Next',()=>{if(a.step===0&&a.space==='model'){wzClose();setTab('venue');S.mode='model';changed('surf');render();return;}a.step++;wzRender();},'btn pri'));
+    else if(a.step===3)nav.append(btn('Build my mockup',()=>{wzRun(a);a.step=4;wzRender();},'btn pri'));
+    else{nav.append(btn('Start over',()=>{a.step=0;wzRender();},'btn'));nav.append(btn(WZ.pick?'Open my mockup':'Open the space anyway',()=>{wzClose();setCam('orbit');setTab(WZ.pick?'proj':'scr');save();},'btn pri'));}
+    b.append(nav);});}
+
 /* ============================== SAVE / LOAD ============================== */
 let saveT=null;
 function save(){S.lib=LIB;clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem('throwline:plan',JSON.stringify(S));}catch(e){}},400);}
@@ -2449,6 +2661,8 @@ function copyText(t){const done=()=>toast('Copied to clipboard');if(navigator.cl
 function showText(t){openModal('Copy this text',(b)=>{const ta=el('textarea');ta.value=t;ta.readOnly=true;b.append(ta);setTimeout(()=>{ta.focus();ta.select();},50);});}
 function openModal(title,fill){const m=$('#modal');m.innerHTML='';const b=el('div','box');b.setAttribute('role','dialog');b.setAttribute('aria-label',title);const h=el('div','row');h.style.justifyContent='space-between';const ht=el('h3','',esc(title));ht.style.cssText='margin:0;font-family:var(--f-disp);letter-spacing:.06em;text-transform:uppercase';h.append(ht,btn('Close',()=>{m.hidden=true;}));b.append(h);fill(b);m.append(b);m.hidden=false;}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')e.target.hidden=true;});
+$('#wizBtn').addEventListener('click',()=>openWizard());
+$('#viewMode').after(help('heat'));$('#lumUnit').after(help('nits'));
 $('#fileBtn').addEventListener('click',()=>openModal('Save or load a plan',b=>{
   b.append(el('p','note','Your plan is kept in this browser automatically. To move it elsewhere, copy the plan code below and paste it back in later, or load a .json plan file.'));
   const ta=el('textarea');ta.id='f-plan-json';ta.value=JSON.stringify(S,null,1);b.append(ta);
@@ -2477,11 +2691,12 @@ function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assig
 function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&MODELFILE.name===S.model.name&&RAWMODEL){rebuildModel();return;}
   idbGet().then(v=>{if(v&&v.name===S.model.name){loadModelData(v.name,v.ext,v.data,false);}else{MODELMSG=`Import ${S.model.name} again to see the model on this device.`;render();}}).catch(()=>{MODELMSG='This browser blocked storage. Import the model file again.';render();});}
 /* ============================== BOOT ============================== */
-loadLib();S=load();if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;}else{preset('gallery');}
+loadLib();S=load();const freshVisit=!S;if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;}else{preset('gallery');}
 S.units='ft';/* the app always opens in feet; the m / ft switch still changes it for the session */
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
 resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
 loop();
+if(freshVisit){let seen=false;try{seen=localStorage.getItem('throwline:wizardSeen')==='1';}catch(e){}if(!seen)openWizard();}
 })();
 </script>
 
