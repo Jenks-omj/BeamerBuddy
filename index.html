@@ -799,7 +799,7 @@ function thDefaults(){return {stageW:18,stageD:11,stageH:1.0,flyH:16,apron:1.8,a
   seatW:15,seatD:15,seatFront:2.5,rowPitch:.95,seatPitch:.55,bal:true,balH:5.5,balD:7,balRows:5,wallGain:.12,stageGain:.08,cycGain:.8};}
 function baseState(){return {name:'Untitled plan',units:'ft',mode:'indoor',room:{L:14,W:10,H:4.5,wallGain:.85,floorGain:.3,ceilGain:.8,walls:true,floor:true,ceil:true},
   site:{L:70,W:60,rise:1,run:12,dir:0,gain:.18},th:thDefaults(),model:modelDefaults(),ambient:1,derate:85,uniformity:90,target:100,quality:'fine',beams:true,dist:'off',view:'lum',lumUnit:'nits',
-  projectors:[],screens:[],people:[],risers:[],guides:[],snap:true,sel:null};}
+  projectors:[],screens:[],people:[],risers:[],guides:[],snap:true,guideText:true,sel:null};}
 
 /* ============================== GEOMETRY HELPERS ============================== */
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -2112,7 +2112,7 @@ function buildGuides(){disposeGroup(G.guides);
   if(gDrag&&gDrag.g){G.guides.add(guideLine(guidePoints(gDrag.g),TC['--accent'],1));G.guides.add(guideLine(tapeEnds(gDrag),TC['--accent'],1,true));}}
 /* a label on each guide, at the point nearest the orbit target, plus the live tape-measure readout while dragging one out */
 function guideLabels(items){
-  (S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),d=b.clone().sub(a),k=clamp(controls.target.clone().sub(a).dot(d)/Math.max(1e-9,d.lengthSq()),.04,.96);
+  if(S.guideText!==false)(S.guides||[]).forEach(g=>{const [a,b]=guideEnds(g),d=b.clone().sub(a),k=clamp(controls.target.clone().sub(a).dot(d)/Math.max(1e-9,d.lengthSq()),.04,.96);
     items.push({id:'g:'+g.id,dist:true,cls:'gtag',sel:g.id===guideSel,pos:guideAt(g,k),h:`<i class="d">${esc(g.name)}</i>${esc(guideText(g))}${guideTool||g.id===guideSel?`<button type="button" class="gx" data-gdel="${g.id}" title="Delete this guide" aria-label="Delete ${esc(g.name)}">×</button>`:''}`});});
   if(gDrag&&gDrag.g)items.push({id:'g:drag',dist:true,pos:(([A,B])=>A.lerp(B,.5))(tapeEnds(gDrag)),h:`<i class="d">${esc(gDrag.from)}</i>${gDrag.typed?esc(gDrag.typed)+' '+S.units+' ↵':fmtLen(gDrag.t)}`});}
 function selectGuide(id){guideSel=id;buildGuides();if(tab==='venue')render();}
@@ -2191,7 +2191,7 @@ function renderGuides(){const w=wallNames();
     it.append(d,mid,el('div','ro'));it.addEventListener('click',()=>{guideSel=g.id===guideSel?null:g.id;buildGuides();render();});
     const row=el('div','grow'),x=btn('×',()=>deleteGuide(g.id),'btn sm danger');x.title='Delete '+g.name;x.setAttribute('aria-label','Delete '+g.name);row.append(it,x);list.append(row);});
   if(!S.guides.length)list.append(el('p','note','No guides yet.'));
-  s.append(list,chk(S,'snap','Snap dragged objects to guides',{on:'none'}));panel.append(s);
+  s.append(list,chk(S,'guideText','Show guide measurements in the 3D view',{on:'none'}),chk(S,'snap','Snap dragged objects to guides',{on:'none'}));panel.append(s);
   const g=S.guides.find(x=>x.id===guideSel);if(!g)return;
   const e=sec(g.name,[btn('Duplicate',()=>{const c={...g,id:uid('g'),name:g.name+' copy'};if(g.run==='x')c.z=+(g.z+.5).toFixed(4);else c.x=+(g.x+.5).toFixed(4);S.guides.push(c);guideSel=c.id;changed('obj');render();}),
     btn('Delete',()=>{S.guides=S.guides.filter(x=>x!==g);guideSel=null;changed('obj');render();},'btn sm danger')]);
@@ -2685,13 +2685,13 @@ $('#viewMode').addEventListener('change',e=>setView(e.target.value));
 document.querySelectorAll('#dispSeg button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
 $('#lumUnit').addEventListener('change',e=>{S.lumUnit=e.target.value;dirty.color=true;save();render();});
 function syncHeader(){$('#sceneName').value=S.name;document.querySelectorAll('#unitsSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.units?'true':'false'));$('#viewMode').value=S.view;document.querySelectorAll('#dispSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.view?'true':'false'));$('#lumUnit').value=S.lumUnit;$('#beamBtn').setAttribute('aria-pressed',S.beams?'true':'false');document.querySelectorAll('#distSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(S.dist||'off')?'true':'false'));}
-function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
+function afterLoad(){setTimeout(loadContent,0);mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;if(S.guideText==null)S.guideText=true;S.people.forEach(h=>{if(h.yaw==null)h.yaw=0;});S.projectors.forEach(p=>{const d=newProjector();for(const k in d)if(p[k]===undefined)p[k]=d[k];});S.screens.forEach(s=>{if(typeof s.convex==='string')s.convex=s.convex==='true';});
   syncHeader();dirty.surf=dirty.objs=dirty.compute=true;setCam('orbit');save();render();}
 
 function restoreModel(){if(S.mode!=='model'||!S.model.name)return;if(MODELFILE&&MODELFILE.name===S.model.name&&RAWMODEL){rebuildModel();return;}
   idbGet().then(v=>{if(v&&v.name===S.model.name){loadModelData(v.name,v.ext,v.data,false);}else{MODELMSG=`Import ${S.model.name} again to see the model on this device.`;render();}}).catch(()=>{MODELMSG='This browser blocked storage. Import the model file again.';render();});}
 /* ============================== BOOT ============================== */
-loadLib();S=load();const freshVisit=!S;if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;}else{preset('gallery');}
+loadLib();S=load();const freshVisit=!S;if(S){mergeLib(S.lib);S.th=Object.assign(thDefaults(),S.th||{});S.model=Object.assign(modelDefaults(),S.model||{});restoreModel();if(!Array.isArray(S.risers))S.risers=[];if(!Array.isArray(S.guides))S.guides=[];S.guides.forEach(g=>{g.name=String(g.name).replace(/^(Guide \d+) \([^)]* from [^)]*\)$/,'$1');if(g.floor==null)g.floor=Math.abs(+g.y||0)<.005;});S.guides=S.guides.filter((g,i)=>!S.guides.slice(0,i).some(o=>sameGuide(o,g)));if(S.snap==null)S.snap=true;if(S.guideText==null)S.guideText=true;}else{preset('gallery');}
 S.units='ft';/* the app always opens in feet; the m / ft switch still changes it for the session */
 try{const t=localStorage.getItem('throwline:tab');if(t)tab=t;}catch(e){}
 resize();syncHeader();buildSurfaces();buildObjects();compute();loadContent();setCam('orbit');setTab(tab);dirty.surf=dirty.objs=false;dirty.compute=false;
